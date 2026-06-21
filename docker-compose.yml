@@ -1,0 +1,80 @@
+version: '3.9'
+
+services:
+
+  # ── MySQL Database ───────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: intellifix_db
+    restart: always
+    environment:
+      MYSQL_DATABASE:      intellifix_db
+      MYSQL_USER:          intellifix_user
+      MYSQL_PASSWORD:      intellifix_pass
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "intellifix_user", "-pintellifix_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # ── Django Backend ───────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: intellifix_backend
+    restart: always
+    command: >
+      sh -c "
+        echo 'Waiting for MySQL...' &&
+        python -c 'import time,MySQLdb; [time.sleep(2) or MySQLdb.connect(host=\"db\",user=\"intellifix_user\",passwd=\"intellifix_pass\",db=\"intellifix_db\") for _ in range(30)]' 2>/dev/null || true &&
+        python manage.py migrate --noinput &&
+        python manage.py seed_data &&
+        python ml/train.py &&
+        python manage.py collectstatic --noinput &&
+        gunicorn intellifix_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120
+      "
+    volumes:
+      - ./backend:/app
+      - media_files:/app/media
+      - static_files:/app/staticfiles
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SECRET_KEY:       django-insecure-intellifix-docker-secret-change-in-prod
+      DEBUG:            "True"
+      DB_NAME:          intellifix_db
+      DB_USER:          intellifix_user
+      DB_PASSWORD:      intellifix_pass
+      DB_HOST:          db
+      DB_PORT:          "3306"
+      ALLOWED_HOSTS:    "localhost,127.0.0.1,backend,0.0.0.0"
+      CORS_ALLOW_ALL_ORIGINS: "True"
+
+  # ── React Frontend ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: intellifix_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:8000/api
+
+volumes:
+  mysql_data:
+  media_files:
+  static_files:

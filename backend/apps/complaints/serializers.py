@@ -1,0 +1,150 @@
+from rest_framework import serializers
+from .models import Complaint, ComplaintUpdate, Feedback
+
+
+class ComplaintUpdateSerializer(serializers.ModelSerializer):
+    updated_by_name = serializers.CharField(source='updated_by.name', read_only=True)
+
+    class Meta:
+        model  = ComplaintUpdate
+        fields = ['id', 'old_status', 'new_status', 'note', 'updated_by_name', 'created_at']
+
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.name', read_only=True)
+
+    class Meta:
+        model  = Feedback
+        fields = ['id', 'rating', 'comment', 'user_name', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
+class FeedbackCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = Feedback
+        fields = ['complaint', 'rating', 'comment']
+
+    def validate_complaint(self, complaint):
+        user = self.context['request'].user
+        if complaint.user != user:
+            raise serializers.ValidationError('You can only rate your own complaints.')
+        if complaint.status not in ('resolved', 'closed'):
+            raise serializers.ValidationError('Complaint must be resolved before rating.')
+        if hasattr(complaint, 'feedback'):
+            raise serializers.ValidationError('Already submitted feedback for this complaint.')
+        return complaint
+
+    def create(self, validated_data):
+        return Feedback.objects.create(user=self.context['request'].user, **validated_data)
+
+
+class ComplaintSerializer(serializers.ModelSerializer):
+    user_name        = serializers.CharField(source='user.name', read_only=True)
+    user_email       = serializers.CharField(source='user.email', read_only=True)
+    department_name  = serializers.CharField(source='department.name', read_only=True)
+    assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True)
+    updates          = ComplaintUpdateSerializer(many=True, read_only=True)
+    feedback         = FeedbackSerializer(read_only=True)
+    has_feedback     = serializers.SerializerMethodField()
+    image_url        = serializers.SerializerMethodField()
+    frequency        = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = Complaint
+        fields = [
+            'id', 'title', 'description', 'location', 'address',
+            'image', 'image_url', 'severity', 'population_affected',
+            'priority', 'priority_score', 'ai_department_suggestion',
+            'status', 'department', 'department_name',
+            'user', 'user_name', 'user_email',
+            'assigned_to', 'assigned_to_name',
+            'is_anonymous', 'views', 'frequency',
+            'created_at', 'updated_at', 'resolved_at',
+            'updates', 'feedback', 'has_feedback',
+        ]
+        read_only_fields = ['id', 'user', 'priority', 'priority_score',
+                            'created_at', 'updated_at', 'resolved_at']
+
+    def get_has_feedback(self, obj):
+        return hasattr(obj, 'feedback') and obj.feedback is not None
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
+    def get_frequency(self, obj):
+        return obj.get_frequency()
+
+
+class ComplaintCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = Complaint
+        fields = [
+            'title', 'description', 'location', 'address',
+            'image', 'severity', 'population_affected',
+            'department', 'is_anonymous',
+        ]
+
+    def create(self, validated_data):
+        from ml.predictor import predict_priority
+        request    = self.context['request']
+        complaint  = Complaint(**validated_data)
+        complaint.user = request.user
+
+        # Calculate frequency before save
+        freq = Complaint.objects.filter(
+            department=complaint.department
+        ).count()
+
+        # ML priority prediction
+        result = predict_priority(
+            description        = complaint.description,
+            severity           = complaint.severity,
+            population_affected = complaint.population_affected,
+            frequency          = freq,
+            has_image          = bool(complaint.image),
+            department_name    = complaint.department.name if complaint.department else '',
+        )
+        complaint.priority       = result['priority']
+        complaint.priority_score = result['score']
+        complaint.save()
+        return complaint
+
+
+class ComplaintStatusSerializer(serializers.ModelSerializer):
+    note = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model  = Complaint
+        fields = ['status', 'assigned_to', 'note']
+
+    def update(self, instance, validated_data):
+        from django.utils import timezone
+        from apps.notifications.utils import send_status_notification
+
+        note       = validated_data.pop('note', '')
+        old_status = instance.status
+        instance   = super().update(instance, validated_data)
+
+        if instance.status != old_status:
+            # Log the update
+            ComplaintUpdate.objects.create(
+                complaint  = instance,
+                updated_by = self.context['request'].user,
+                old_status = old_status,
+                new_status = instance.status,
+                note       = note,
+            )
+            if instance.status in ('resolved', 'closed'):
+                instance.resolved_at = timezone.now()
+                instance.save(update_fields=['resolved_at'])
+
+            # Send notification
+            try:
+                send_status_notification(instance)
+            except Exception:
+                pass
+
+        return instance

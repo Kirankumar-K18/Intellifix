@@ -1,0 +1,62 @@
+/* IntelliFix Global Styles */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0a0e1a;
+  --bg2:     #0f1626;
+  --bg3:     #141d35;
+  --surf:    #1a2540;
+  --surf2:   #1e2d4a;
+  --brd:     #2a3a5c;
+  --brd2:    #354a6e;
+  --pri:     #3b82f6;
+  --pri-d:   rgba(59,130,246,.18);
+  --pri-dd:  rgba(59,130,246,.08);
+  --acc:     #06b6d4;
+  --acc2:    #8b5cf6;
+  --ok:      #10b981;
+  --warn:    #f59e0b;
+  --err:     #ef4444;
+  --tx:      #e2e8f0;
+  --tx2:     #94a3b8;
+  --tx3:     #64748b;
+  --font:    'Inter', system-ui, sans-serif;
+  --mono:    'JetBrains Mono', monospace;
+  --radius:  10px;
+  --shadow:  0 4px 24px rgba(0,0,0,.4);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--tx);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--brd2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--tx3); }
+
+a { color: var(--pri); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button { font-family: var(--font); cursor: pointer; }
+input, select, textarea { font-family: var(--font); }
+
+/* Animations */
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes pulse   { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+
+.fade-in  { animation: fadeIn  .3s ease; }
+.slide-up { animation: slideUp .3s ease; }
+
+/* Utility */
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-only  { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
