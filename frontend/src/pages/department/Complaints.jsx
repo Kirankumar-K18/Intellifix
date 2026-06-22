@@ -73,10 +73,20 @@ export default function DeptComplaints() {
                     <Badge type={c.status} />
                   </div>
                   <div style={{ fontSize:11, color:T.tx2, marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.description}</div>
-                  <div style={{ display:'flex', gap:12, fontSize:11, color:T.tx3 }}>
+                  <div style={{ display:'flex', gap:12, fontSize:11, color:T.tx3, flexWrap:'wrap' }}>
                     <span>📍 {c.location}</span>
-                    <span>👤 {c.is_anonymous ? 'Anonymous' : c.user_name}</span>
-                    <span>📅 {new Date(c.created_at).toLocaleDateString('en-IN')}</span>
+
+                    <span>
+                      👤 {c.is_anonymous ? 'Anonymous' : c.user_name}
+                    </span>
+
+                    <span>
+                      👷 {c.assigned_to_name || 'Unassigned'}
+                    </span>
+
+                    <span>
+                      📅 {new Date(c.created_at).toLocaleDateString('en-IN')}
+                    </span>
                   </div>
                 </div>
                 <div style={{ textAlign:'right', flexShrink:0 }}>
@@ -173,13 +183,17 @@ export function DeptComplaintDetail() {
           <div style={{ fontSize:13, color:T.tx2, lineHeight:1.65, marginBottom:14 }}>{c.description}</div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, fontSize:12 }}>
             {[
-              ['📍 Location',     c.location],
-              ['👤 Citizen',      c.is_anonymous ? 'Anonymous' : c.user_name],
-              ['📧 Email',        c.is_anonymous ? '—' : c.user_email],
-              ['⚡ Priority Score', `${c.priority_score?.toFixed(1) || 0} / 100`],
-              ['📅 Submitted',    new Date(c.created_at).toLocaleDateString('en-IN', { dateStyle:'long' })],
-              ['✅ Resolved',     c.resolved_at ? new Date(c.resolved_at).toLocaleDateString('en-IN') : '—'],
-            ].map(([l, v]) => (
+                ['📍 Location', c.location],
+                ['👤 Citizen', c.is_anonymous ? 'Anonymous' : c.user_name],
+                ['📧 Email', c.is_anonymous ? '—' : c.user_email],
+
+                ['👷 Worker', c.assigned_to_name || 'Unassigned'],
+                ['📱 Worker Phone', c.assigned_to_phone || '—'],
+                ['⚡ Priority Score', `${c.priority_score?.toFixed(1) || 0} / 100`],
+
+                ['📅 Submitted', new Date(c.created_at).toLocaleDateString('en-IN', { dateStyle:'long' })],
+                ['✅ Resolved', c.resolved_at ? new Date(c.resolved_at).toLocaleDateString('en-IN') : '—'],
+              ].map(([l, v]) => (
               <div key={l}>
                 <div style={{ color:T.tx3, marginBottom:2 }}>{l}</div>
                 <div style={{ fontWeight:600 }}>{v}</div>

@@ -152,6 +152,44 @@ export function ComplaintDetail() {
             ))}
           </div>
         </Card>
+        {/* Assigned Worker */}
+        {c.assigned_to_name && (
+          <Card>
+            <div style={{ fontSize:13, fontWeight:700, marginBottom:12 }}>
+              👷 Assigned Worker
+            </div>
+
+            <div
+              style={{
+                display:'flex',
+                flexDirection:'column',
+                gap:8,
+                fontSize:13
+              }}
+            >
+              <div>
+                <span style={{ color:T.tx3 }}>Name</span>
+                <div style={{ fontWeight:600 }}>
+                  {c.assigned_to_name}
+                </div>
+              </div>
+
+              <div>
+                <span style={{ color:T.tx3 }}>Email</span>
+                <div style={{ fontWeight:600 }}>
+                  {c.assigned_to_email || 'Not Available'}
+                </div>
+              </div>
+
+              <div>
+                <span style={{ color:T.tx3 }}>Phone</span>
+                <div style={{ fontWeight:600 }}>
+                  {c.assigned_to_phone || 'Not Available'}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Photo evidence */}
         {c.image_url && (

@@ -1,60 +1,255 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { complaintAPI, analyticsAPI } from '../../services/api'
+import { complaintAPI, analyticsAPI, notifAPI } from '../../services/api'
 import { Layout, StatCard, Card, Badge, PriorityBadge, Spinner, EmptyState } from '../../components/common/UI'
-
+import { authAPI } from '../../services/api'
 const T = { pri:'#3b82f6', ok:'#10b981', warn:'#f59e0b', err:'#ef4444', tx:'#e2e8f0', tx2:'#94a3b8', tx3:'#64748b', brd:'#2a3a5c', acc2:'#8b5cf6' }
 
 export default function DeptDashboard() {
-  const { user }  = useAuth()
+  const { user } = useAuth()
+  const isWorker =
+    user?.role === 'worker' ||
+    user?.user_type === 'worker' ||
+    user?.is_worker === true
   const [data,    setData]    = useState(null)
   const [topComplaints, setTC] = useState([])
+  const [notifications, setNotifications] = useState([])
   const [loading, setL]       = useState(true)
+  const [workers, setWorkers] = useState([])
 
   useEffect(() => {
-    Promise.all([
-      analyticsAPI.department(),
-      complaintAPI.getAll('ordering=-priority_score&page_size=5'),
-    ])
-      .then(([ar, cr]) => {
-        setData(ar.data)
-        setTC(cr.data.results || cr.data)
-      })
-      .catch(() => {})
-      .finally(() => setL(false))
-  }, [])
+
+    if (isWorker) {
+
+      Promise.all([
+        complaintAPI.getAll(),
+        complaintAPI.getFeedback(),
+        notifAPI.getAll()
+      ])
+        .then(([cr, fr, nr]) => {
+          setTC(cr.data.results || cr.data)
+
+          const complaints = cr.data.results || cr.data
+          const feedbacks = fr.data.results || fr.data
+          const notifs = nr.data.results || nr.data
+          setNotifications(notifs)
+
+          setData({
+            total: complaints.length,
+            pending: complaints.filter(c => c.status === 'pending').length,
+            in_progress: complaints.filter(c => c.status === 'in_progress').length,
+            resolved: complaints.filter(
+              c => c.status === 'resolved' || c.status === 'closed'
+            ).length,
+            feedback_count: feedbacks.length,
+            avg_rating:
+              feedbacks.length > 0
+                ? feedbacks.reduce((s, f) => s + f.rating, 0) /
+                  feedbacks.length
+                : 0
+          })
+        })
+        .finally(() => setL(false))
+
+    } else {
+
+      Promise.all([
+        analyticsAPI.department(),
+        complaintAPI.getAll('ordering=-priority_score&page_size=5'),
+        authAPI.getUsers('role=worker')
+      ])
+        .then(([ar, cr, wr]) => {
+          setData(ar.data)
+          setTC(cr.data.results || cr.data)
+          setWorkers(wr.data.results || wr.data)
+        })
+        .finally(() => setL(false))
+    }
+
+  }, [isWorker])
 
   if (loading) return <Layout title="Department Dashboard"><Spinner /></Layout>
 
   return (
-    <Layout title="Department Dashboard">
+    <Layout title={isWorker ? "Worker Dashboard" : "Department Dashboard"}>
       {/* Welcome */}
       <div style={{ background:'linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))', border:`1px solid ${T.brd}`, borderRadius:14, padding:'18px 22px', marginBottom:22 }}>
         <div style={{ fontSize:18, fontWeight:800, marginBottom:3 }}>Welcome, {user?.name?.split(' ')[0]} 👋</div>
-        <div style={{ fontSize:12, color:T.tx2 }}>🏢 {user?.department_name} — Complaints sorted by AI priority score</div>
+        <div style={{ fontSize:12, color:T.tx2 }}>{isWorker? "👷 Worker Portal": `🏢 ${user?.department_name}`} — Complaints sorted by AI priority score</div>
       </div>
 
       {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:22 }}>
-        <StatCard label="Total Complaints" value={data?.total    ?? 0} icon="📋" color={T.pri} />
+        <StatCard
+          label={isWorker ? "Assigned" : "Total Complaints"}
+          value={data?.total ?? 0}
+          icon="📋"
+          color={T.pri}
+        />
         <StatCard label="Pending"          value={data?.pending  ?? 0} icon="⏳" color={T.warn} />
         <StatCard label="In Progress"      value={data?.in_progress ?? 0} icon="🔧" color={T.acc2} />
         <StatCard label="Resolved"         value={data?.resolved ?? 0} icon="✅" color={T.ok}
           sub={`Avg ${data?.avg_resolution_hours ?? '—'} hrs`} />
       </div>
+      {isWorker && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 16,
+            marginBottom: 20
+          }}
+        >
+          {/* My Performance */}
+          <Card>
+            <h3>⭐ My Performance</h3>
 
-      {data?.avg_rating > 0 && (
-        <Card style={{ marginBottom:22, display:'flex', alignItems:'center', gap:16 }}>
-          <div>
-            <div style={{ fontSize:11, color:T.tx3, fontWeight:700, textTransform:'uppercase', letterSpacing:.5, marginBottom:4 }}>Department Rating</div>
-            <div style={{ fontSize:32, fontWeight:800, color:'#fbbf24' }}>{'★'.repeat(Math.round(data.avg_rating))}{'☆'.repeat(5-Math.round(data.avg_rating))}</div>
-            <div style={{ fontSize:13, color:T.tx2 }}>{data.avg_rating.toFixed(1)} / 5.0 average</div>
+            <p>
+              Average Rating:{' '}
+              {data?.avg_rating?.toFixed?.(1) || '0.0'} ⭐
+            </p>
+
+            <p>
+              Feedback Count:{' '}
+              {data?.feedback_count || 0}
+            </p>
+
+            <p>
+              Resolution Rate:{' '}
+              {data?.total
+                ? Math.round((data.resolved / data.total) * 100)
+                : 0}
+              %
+            </p>
+          </Card>
+
+          {/* Notifications */}
+          <Card>
+            <h3>🔔 Notifications</h3>
+
+            {notifications.length === 0 ? (
+              <div
+                style={{
+                  color: '#94a3b8',
+                  fontSize: 13
+                }}
+              >
+                No new notifications
+              </div>
+            ) : (
+              notifications.slice(0, 5).map(n => (
+                <div
+                  key={n.id}
+                  style={{
+                    padding: '10px 0',
+                    borderBottom: '1px solid rgba(255,255,255,.08)'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: 10
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 13
+                        }}
+                      >
+                        {n.title}
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: '#94a3b8',
+                          marginTop: 3
+                        }}
+                      >
+                        {n.message}
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: '#64748b',
+                          marginTop: 4
+                        }}
+                      >
+                        {new Date(n.created_at).toLocaleString('en-IN')}
+                      </div>
+                    </div>
+
+                    {!n.is_read && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await notifAPI.markRead(n.id)
+
+                            setNotifications(prev =>
+                              prev.map(item =>
+                                item.id === n.id
+                                  ? { ...item, is_read: true }
+                                  : item
+                              )
+                            )
+                          } catch (err) {
+                            console.error(err)
+                          }
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#3b82f6',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          fontWeight: 600
+                        }}
+                      >
+                        Mark Read
+                      </button>
+                    )}
+
+                    {n.is_read && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: '#10b981',
+                          fontWeight: 600
+                        }}
+                      >
+                        ✓ Read
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+
+            {notifications.length > 5 && (
+              <div
+                style={{
+                  marginTop: 10,
+                  textAlign: 'center',
+                  color: '#3b82f6',
+                  fontSize: 12,
+                  cursor: 'pointer'
+                }}
+              >
+                View All Notifications →
+              </div>
+            )}
+                </Card>
           </div>
-        </Card>
-      )}
+        )}
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        {!isWorker && (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
         {/* Top priority complaints */}
         <Card>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
@@ -99,7 +294,58 @@ export default function DeptDashboard() {
           })}
           {!data?.by_priority?.length && <EmptyState icon="📊" title="No data yet" />}
         </Card>
+        <Card style={{ marginTop: 16 }}>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              marginBottom: 14
+            }}
+          >
+            🏆 Top Workers
+          </div>
+
+          {[...workers]
+            .sort((a,b) => b.avg_rating - a.avg_rating)
+            .slice(0,5)
+            .map((w,index) => (
+              <div
+                key={w.id}
+                style={{
+                  display:'flex',
+                  justifyContent:'space-between',
+                  padding:'10px 0',
+                  borderBottom:'1px solid rgba(255,255,255,.08)'
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight:600 }}>
+                    #{index + 1} {w.name}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize:12,
+                      color:'#94a3b8'
+                    }}
+                  >
+                    Resolved: {w.resolved_count}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    color:'#fbbf24',
+                    fontWeight:700
+                  }}
+                >
+                  ⭐ {w.avg_rating}
+                </div>
+              </div>
+            ))}
+        </Card>
       </div>
+    )}
     </Layout>
   )
 }

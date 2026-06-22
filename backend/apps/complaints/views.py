@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
+from apps.notifications.models import Notification
 
 from .models import Complaint, Feedback
 from .serializers import (
@@ -37,7 +38,10 @@ class ComplaintListCreateView(generics.ListCreateAPIView):
 
         if u.is_admin_user:
             return qs
-        if u.is_worker or u.is_department_admin:
+        if u.is_worker:
+            return qs.filter(assigned_to=u)
+
+        if u.is_department_admin:
             return qs.filter(department=u.department)
         return qs.filter(user=u)
 
@@ -125,6 +129,19 @@ class FeedbackCreateView(generics.CreateAPIView):
 
     def get_serializer_context(self):
         return {'request': self.request}
+    def perform_create(self, serializer):
+            feedback = serializer.save()
+
+            complaint = feedback.complaint
+
+            if complaint.assigned_to:
+                Notification.objects.create(
+                    user=complaint.assigned_to,
+                    complaint=complaint,
+                    type='feedback',
+                    title='New Feedback Received',
+                    message=f'You received a {feedback.rating}/5 rating for "{complaint.title}".'
+                )
 
 
 @api_view(['GET'])

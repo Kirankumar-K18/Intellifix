@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Complaint, ComplaintUpdate, Feedback
-
+from apps.notifications.models import Notification
 
 class ComplaintUpdateSerializer(serializers.ModelSerializer):
     updated_by_name = serializers.CharField(source='updated_by.name', read_only=True)
@@ -11,13 +11,39 @@ class ComplaintUpdateSerializer(serializers.ModelSerializer):
 
 
 class FeedbackSerializer(serializers.ModelSerializer):
-    user_name = serializers.CharField(source='user.name', read_only=True)
+    user_name = serializers.CharField(
+        source='user.name',
+        read_only=True
+    )
+
+    complaint_id = serializers.IntegerField(
+        source='complaint.id',
+        read_only=True
+    )
+
+    assigned_to = serializers.IntegerField(
+        source='complaint.assigned_to.id',
+        read_only=True
+    )
+
+    assigned_to_name = serializers.CharField(
+        source='complaint.assigned_to.name',
+        read_only=True
+    )
 
     class Meta:
-        model  = Feedback
-        fields = ['id', 'rating', 'comment', 'user_name', 'created_at']
+        model = Feedback
+        fields = [
+            'id',
+            'rating',
+            'comment',
+            'user_name',
+            'complaint_id',
+            'assigned_to',
+            'assigned_to_name',
+            'created_at'
+        ]
         read_only_fields = ['id', 'created_at']
-
 
 class FeedbackCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,11 +69,21 @@ class ComplaintSerializer(serializers.ModelSerializer):
     user_email       = serializers.CharField(source='user.email', read_only=True)
     department_name  = serializers.CharField(source='department.name', read_only=True)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True)
+    assigned_to_email = serializers.CharField(
+        source='assigned_to.email',
+        read_only=True
+    )
+
+    assigned_to_phone = serializers.CharField(
+        source='assigned_to.phone',
+        read_only=True
+    )
     updates          = ComplaintUpdateSerializer(many=True, read_only=True)
     feedback         = FeedbackSerializer(read_only=True)
     has_feedback     = serializers.SerializerMethodField()
     image_url        = serializers.SerializerMethodField()
     frequency        = serializers.SerializerMethodField()
+    
 
     class Meta:
         model  = Complaint
@@ -57,7 +93,10 @@ class ComplaintSerializer(serializers.ModelSerializer):
             'priority', 'priority_score', 'ai_department_suggestion',
             'status', 'department', 'department_name',
             'user', 'user_name', 'user_email',
-            'assigned_to', 'assigned_to_name',
+            'assigned_to',
+            'assigned_to_name',
+            'assigned_to_email',
+            'assigned_to_phone',
             'is_anonymous', 'views', 'frequency',
             'created_at', 'updated_at', 'resolved_at',
             'updates', 'feedback', 'has_feedback',
@@ -125,8 +164,28 @@ class ComplaintStatusSerializer(serializers.ModelSerializer):
         from apps.notifications.utils import send_status_notification
 
         note       = validated_data.pop('note', '')
+        old_worker = instance.assigned_to
         old_status = instance.status
         instance   = super().update(instance, validated_data)
+        # New assignment
+        if instance.assigned_to and old_worker is None:
+            Notification.objects.create(
+                user=instance.assigned_to,
+                complaint=instance,
+                type='assignment',
+                title='New Complaint Assigned',
+                message=f'Complaint "{instance.title}" has been assigned to you.'
+            )
+
+        # Reassignment
+        elif old_worker and old_worker != instance.assigned_to:
+            Notification.objects.create(
+                user=instance.assigned_to,
+                complaint=instance,
+                type='assignment',
+                title='Complaint Reassigned',
+                message=f'You are now responsible for "{instance.title}".'
+            )
 
         if instance.status != old_status:
             # Log the update

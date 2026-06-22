@@ -30,6 +30,7 @@ export default function Workers() {
   const [search,  setSearch] = useState('')
   const [form, setForm] = useState({name:'',email:'',phone:'',password:''})  
   const [saving,  setSaving] = useState(false)
+  const [selectedWorker, setSelectedWorker] = useState(null)
   const load = useCallback(() => {
     setL(true)
 
@@ -78,6 +79,24 @@ export default function Workers() {
     { key:'name',  label:'Name',       render:(v,r) => <div><div style={{ fontWeight:600 }}>{v}</div><div style={{ fontSize:10, color:T.tx3 }}>{r.email}</div></div> },
     { key:'role',  label:'Role',       render:v  => <Badge type={v} /> },
     { key:'department_name', label:'Department', render:v => v || '—' },
+    {
+      key:'assigned_count',
+      label:'Assigned'
+    },
+    {
+      key:'in_progress_count',
+      label:'In Progress'
+    },
+    {
+      key:'resolved_count',
+      label:'Resolved'
+    },
+    {
+      key:'avg_rating',
+      label:'Rating',
+      render:v => `⭐ ${v || 0}`
+    },
+    
     { key:'phone', label:'Phone',      render:v => v || '—' },
     { key:'is_active', label:'Status', render:v => <span style={{ fontSize:11, fontWeight:700, color: v?T.ok:T.err }}>{v?'Active':'Inactive'}</span> },
     { key:'id',    label:'Actions',    render:(_,r) => (
@@ -162,7 +181,7 @@ export default function Workers() {
           style={{ background:T.bg3, border:`1px solid ${T.brd}`, borderRadius:9, padding:'8px 12px', color:T.tx, fontSize:13, fontFamily:'inherit', outline:'none', width:'100%', maxWidth:300 }} />
       </div>
       <Card style={{ padding:0 }}>
-        {loading ? <Spinner /> : <Table columns={columns} data={filtered} emptyIcon="👥" emptyTitle="No users found" />}
+        {loading ? <Spinner /> : <Table columns={columns} data={filtered} onRowClick={(row) => setSelectedWorker(row)} emptyIcon="👥" emptyTitle="No users found" />}
       </Card>
 
       <Modal open={modal} onClose={() => setModal(false)} title={editUser ? 'Edit Worker' : 'Create Worker'}>
@@ -175,6 +194,27 @@ export default function Workers() {
           <Button loading={saving} onClick={handleSave} style={{ flex:1, justifyContent:'center' }}>{editUser ? 'Save Changes' : 'Create Worker'}</Button>
         </div>
       </Modal>
+      <Modal
+      open={!!selectedWorker}
+      onClose={() => setSelectedWorker(null)}
+      title="Worker Details"
+    >
+      {selectedWorker && (
+        <div>
+          <h3>{selectedWorker.name}</h3>
+
+          <p><strong>Email:</strong> {selectedWorker.email}</p>
+          <p><strong>Phone:</strong> {selectedWorker.phone || 'N/A'}</p>
+
+          <hr />
+
+          <p><strong>Assigned:</strong> {selectedWorker.assigned_count}</p>
+          <p><strong>Resolved:</strong> {selectedWorker.resolved_count}</p>
+          <p><strong>In Progress:</strong> {selectedWorker.in_progress_count}</p>
+          <p><strong>Average Rating:</strong> ⭐ {selectedWorker.avg_rating}</p>
+        </div>
+      )}
+    </Modal>
     </Layout>
   )
 }
