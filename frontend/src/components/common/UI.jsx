@@ -243,6 +243,7 @@ const NAV_LINKS = {
   worker: [
     { to:'/department', icon:'🏠', label:'Dashboard' },
     { to:'/department/complaints', icon:'📋', label:'My Complaints' },
+    { to:'/worker/performance', icon:'⭐', label:'My Performance' },
   ],
 
   department_admin: [

@@ -1,7 +1,19 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { complaintAPI } from '../../services/api'
-import { Layout, Card, Badge, PriorityBadge, Button, Spinner, EmptyState, StarRating, Modal } from '../../components/common/UI'
+import {
+  Layout,
+  Card,
+  Badge,
+  PriorityBadge,
+  Button,
+  Spinner,
+  EmptyState,
+  StarRating,
+  Modal,
+  Input,
+  Textarea
+} from '../../components/common/UI'
 import toast from 'react-hot-toast'
 
 const T = { pri:'#3b82f6', ok:'#10b981', warn:'#f59e0b', err:'#ef4444', tx:'#e2e8f0', tx2:'#94a3b8', tx3:'#64748b', brd:'#2a3a5c', bg3:'#141d35', surf:'#1a2540' }
@@ -201,7 +213,29 @@ export function ComplaintDetail() {
           <div style={{ textAlign:'center', fontSize:12, color:T.tx3, marginBottom:16 }}>
             {['','Poor','Below Average','Average','Good','Excellent'][fbForm.rating] || 'Click a star to rate'}
           </div>
-          <Textarea label="Additional Comments (optional)" placeholder="Share your experience…" value={fbForm.comment} onChange={e => setFbForm(f => ({...f, comment:e.target.value}))} />
+          <textarea
+            value={fbForm.comment}
+            onChange={(e) =>
+              setFbForm(f => ({
+                ...f,
+                comment: e.target.value
+              }))
+            }
+            rows={4}
+            placeholder="Share your experience..."
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '10px',
+              border: `1px solid ${T.brd}`,
+              background: T.bg3,
+              color: T.tx,
+              fontSize: '14px',
+              resize: 'vertical',
+              outline: 'none',
+              fontFamily: 'inherit'
+            }}
+          />
         </div>
         <div style={{ display:'flex', gap:10 }}>
           <Button variant="outline" onClick={() => setFbModal(false)}>Cancel</Button>

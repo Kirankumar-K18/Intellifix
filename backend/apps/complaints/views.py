@@ -104,12 +104,18 @@ class FeedbackListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        u  = self.request.user
+        u = self.request.user
         qs = Feedback.objects.select_related('complaint', 'user')
+
         if u.is_admin_user:
             return qs
-        if u.is_worker or u.is_department_admin:
+
+        if u.is_worker:
+            return qs.filter(complaint__assigned_to=u)
+
+        if u.is_department_admin:
             return qs.filter(complaint__department=u.department)
+
         return qs.filter(user=u)
 
 

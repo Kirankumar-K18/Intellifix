@@ -107,10 +107,9 @@ def department_analytics(request):
     eight_weeks_ago = timezone.now() - timedelta(weeks=8)
     weekly = list(
         c_qs.filter(created_at__gte=eight_weeks_ago)
-            .annotate(week=TruncWeek('created_at'))
-            .values('week')
-            .annotate(count=Count('id'))
-            .order_by('week')
+            .extra(select={"week": "DATE(created_at)"})
+            .values("week")
+            .annotate(count=Count("id"))
     )
     for w in weekly:
         if w['week']:

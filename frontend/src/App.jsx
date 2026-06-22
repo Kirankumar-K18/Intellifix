@@ -25,6 +25,7 @@ import AdminUsers     from './pages/admin/Users'
 import AdminDepartments from './pages/admin/Departments'
 import AdminComplaints  from './pages/admin/Complaints'
 import AdminAnalytics   from './pages/admin/Analytics'
+import WorkerPerformance from './pages/worker/Performance'
 
 function PrivateRoute({ children, roles }) {
   const { user, loading } = useAuth()
@@ -76,6 +77,14 @@ export default function App() {
           element={
             <PrivateRoute roles={['department_admin']}>
               <Workers />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/worker/performance"
+          element={
+            <PrivateRoute roles={['worker']}>
+              <WorkerPerformance />
             </PrivateRoute>
           }
         />
