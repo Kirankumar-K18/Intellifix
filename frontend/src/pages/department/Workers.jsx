@@ -43,16 +43,19 @@ export default function Workers() {
 
           const totalWorkers = workerData.length
 
+          const ratedWorkers = workerData.filter(
+            w => Number(w.avg_rating || 0) > 0
+          )
+
           const avgRating =
-            totalWorkers > 0
+            ratedWorkers.length > 0
               ? (
-                  workerData.reduce(
+                  ratedWorkers.reduce(
                     (sum, w) => sum + Number(w.avg_rating || 0),
                     0
-                  ) / totalWorkers
+                  ) / ratedWorkers.length
                 ).toFixed(1)
               : '0.0'
-
           const bestWorker =
             workerData.length > 0
               ? [...workerData].sort(
