@@ -5,7 +5,11 @@ from django.db.models import Count, Avg, Q
 from django.db.models.functions import TruncMonth, TruncWeek
 from django.utils import timezone
 from datetime import timedelta
-
+from django.http import HttpResponse
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from apps.complaints.models import Complaint, Feedback
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -34,6 +38,7 @@ def overview(request):
     in_prog   = c_qs.filter(status='in_progress').count()
     closed    = c_qs.filter(status='closed').count()
     rejected  = c_qs.filter(status='rejected').count()
+    escalated = c_qs.filter(is_escalated=True).count()
 
     by_status = list(c_qs.values('status').annotate(count=Count('id')).order_by('status'))
     by_priority = list(c_qs.values('priority').annotate(count=Count('id')))
@@ -57,7 +62,7 @@ def overview(request):
     data = {
         'summary': {
             'total': total, 'resolved': resolved, 'pending': pending,
-            'in_progress': in_prog, 'closed': closed, 'rejected': rejected,
+            'in_progress': in_prog, 'closed': closed, 'rejected': rejected,'escalated': escalated,
             'resolution_rate': round(resolved / total * 100, 1) if total else 0,
         },
         'by_status':    by_status,
@@ -141,3 +146,94 @@ def department_analytics(request):
         'avg_resolution_hours':  avg_resolution_hours,
         'by_priority': list(c_qs.values('priority').annotate(count=Count('id'))),
     })
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_workers_pdf(request):
+    from apps.users.models import User
+
+    user = request.user
+
+    if not user.is_department_admin:
+        return Response(
+            {'error': 'Only Department Admin can export reports'},
+            status=403
+        )
+
+    workers = User.objects.filter(
+        role='worker',
+        department=user.department
+    )
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = (
+        'attachment; filename="workers_report.pdf"'
+    )
+
+    doc = SimpleDocTemplate(response)
+
+    styles = getSampleStyleSheet()
+
+    content = []
+
+    content.append(
+        Paragraph(
+            f'IntelliFix - {user.department.name} Workers Report',
+            styles['Title']
+        )
+    )
+
+    content.append(Spacer(1, 20))
+
+    data = [[
+        'Worker',
+        'Assigned',
+        'Resolved',
+        'Active',
+        'Rating'
+    ]]
+
+
+    for worker in workers:
+
+        assigned_count = Complaint.objects.filter(
+            assigned_to=worker
+        ).count()
+
+        resolved_count = Complaint.objects.filter(
+            assigned_to=worker,
+            status='resolved'
+        ).count()
+
+        in_progress_count = Complaint.objects.filter(
+            assigned_to=worker,
+            status='in_progress'
+        ).count()
+
+        avg_rating = Feedback.objects.filter(
+            complaint__assigned_to=worker
+        ).aggregate(avg=Avg('rating'))['avg'] or 0
+
+        data.append([
+            worker.name,
+            assigned_count,
+            resolved_count,
+            in_progress_count,
+            round(avg_rating, 1)
+        ])
+
+    table = Table(data)
+
+    table.setStyle(
+        TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold')
+        ])
+    )
+
+    content.append(table)
+
+    doc.build(content)
+
+    return response

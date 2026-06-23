@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { authAPI } from '../../services/api'
+import { authAPI, analyticsAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 import {
   Layout,
@@ -31,12 +31,46 @@ export default function Workers() {
   const [form, setForm] = useState({name:'',email:'',phone:'',password:''})  
   const [saving,  setSaving] = useState(false)
   const [selectedWorker, setSelectedWorker] = useState(null)
+  const [stats, setStats] = useState({totalWorkers: 0,avgRating: '0.0',bestWorker: 'N/A',totalAssigned: 0})
   const load = useCallback(() => {
     setL(true)
 
     authAPI.getUsers('role=worker')
         .then(res => {
-        setUsers(res.data.results || res.data)
+          const workerData = res.data.results || res.data
+
+          setUsers(workerData)
+
+          const totalWorkers = workerData.length
+
+          const avgRating =
+            totalWorkers > 0
+              ? (
+                  workerData.reduce(
+                    (sum, w) => sum + Number(w.avg_rating || 0),
+                    0
+                  ) / totalWorkers
+                ).toFixed(1)
+              : '0.0'
+
+          const bestWorker =
+            workerData.length > 0
+              ? [...workerData].sort(
+                  (a, b) => Number(b.avg_rating || 0) - Number(a.avg_rating || 0)
+                )[0]
+              : null
+
+          const totalAssigned = workerData.reduce(
+            (sum, w) => sum + Number(w.assigned_count || 0),
+            0
+          )
+
+          setStats({
+            totalWorkers,
+            avgRating,
+            bestWorker: bestWorker?.name || 'N/A',
+            totalAssigned
+          })
         })
         .catch(err => {
         console.error(err)
@@ -175,7 +209,93 @@ export default function Workers() {
   ]
 
   return (
-    <Layout title="Worker Management" action={<Button onClick={openCreate}>+ Add Worker</Button>}>
+    <Layout
+      title="Worker Management"
+      action={
+        <div style={{ display:'flex', gap:10 }}>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                const response = await analyticsAPI.exportWorkersPDF()
+
+                const url = window.URL.createObjectURL(
+                  new Blob([response.data])
+                )
+
+                const link = document.createElement('a')
+
+                link.href = url
+                link.download = 'workers_report.pdf'
+
+                document.body.appendChild(link)
+                link.click()
+                link.remove()
+
+                toast.success('PDF downloaded')
+              } catch (err) {
+                console.error(err)
+                toast.error('Failed to download report')
+              }
+            }}
+          >
+            📄 Export PDF
+          </Button>
+
+          <Button onClick={openCreate}>
+            + Add Worker
+          </Button>
+        </div>
+      }
+    >
+      <div
+        style={{
+          display:'grid',
+          gridTemplateColumns:'repeat(4,1fr)',
+          gap:16,
+          marginBottom:20
+        }}
+      >
+        <Card>
+          <div style={{ fontSize:24 }}>👷</div>
+          <div style={{ fontSize:22, fontWeight:700 }}>
+            {stats.totalWorkers}
+          </div>
+          <div style={{ color:T.tx2, fontSize:12 }}>
+            Total Workers
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ fontSize:24 }}>⭐</div>
+          <div style={{ fontSize:22, fontWeight:700 }}>
+            {stats.avgRating}
+          </div>
+          <div style={{ color:T.tx2, fontSize:12 }}>
+            Average Rating
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ fontSize:24 }}>🏆</div>
+          <div style={{ fontSize:18, fontWeight:700 }}>
+            {stats.bestWorker}
+          </div>
+          <div style={{ color:T.tx2, fontSize:12 }}>
+            Best Worker
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ fontSize:24 }}>📋</div>
+          <div style={{ fontSize:22, fontWeight:700 }}>
+            {stats.totalAssigned}
+          </div>
+          <div style={{ color:T.tx2, fontSize:12 }}>
+            Assigned Complaints
+          </div>
+        </Card>
+      </div>
       <div style={{ marginBottom:14 }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search users..."
           style={{ background:T.bg3, border:`1px solid ${T.brd}`, borderRadius:9, padding:'8px 12px', color:T.tx, fontSize:13, fontFamily:'inherit', outline:'none', width:'100%', maxWidth:300 }} />

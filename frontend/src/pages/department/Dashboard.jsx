@@ -55,14 +55,18 @@ export default function DeptDashboard() {
     } else {
 
       Promise.all([
-        analyticsAPI.department(),
-        complaintAPI.getAll('ordering=-priority_score&page_size=5'),
-        authAPI.getUsers('role=worker')
+          analyticsAPI.department(),
+          complaintAPI.getAll('ordering=-priority_score&page_size=5'),
+          authAPI.getUsers('role=worker'),
+          notifAPI.getAll()
       ])
-        .then(([ar, cr, wr]) => {
+      .then(([ar, cr, wr, nr]) => {
           setData(ar.data)
           setTC(cr.data.results || cr.data)
           setWorkers(wr.data.results || wr.data)
+
+          const notifs = nr.data.results || nr.data
+          setNotifications(notifs)
         })
         .finally(() => setL(false))
     }
@@ -249,6 +253,7 @@ export default function DeptDashboard() {
         )}
 
         {!isWorker && (
+          <>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
         {/* Top priority complaints */}
         <Card>
@@ -273,78 +278,189 @@ export default function DeptDashboard() {
               </Link>
             ))}
         </Card>
-
-        {/* Priority breakdown */}
         <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>📊 By Priority</div>
-          {(data?.by_priority || []).map(item => {
-            const colors = { low:'#10b981', medium:'#f59e0b', high:'#ef4444', critical:'#dc2626' }
-            const total  = data.total || 1
-            return (
-              <div key={item.priority} style={{ marginBottom:12 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                  <span style={{ fontSize:12, textTransform:'capitalize' }}>{item.priority}</span>
-                  <span style={{ fontSize:12, fontWeight:700 }}>{item.count}</span>
-                </div>
-                <div style={{ height:8, background:'#141d35', borderRadius:4, overflow:'hidden' }}>
-                  <div style={{ height:'100%', background: colors[item.priority] || T.pri, width:`${(item.count/total)*100}%`, borderRadius:4, transition:'width .6s ease' }} />
-                </div>
-              </div>
-            )
-          })}
-          {!data?.by_priority?.length && <EmptyState icon="📊" title="No data yet" />}
-        </Card>
-        <Card style={{ marginTop: 16 }}>
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 700,
-              marginBottom: 14
-            }}
-          >
-            🏆 Top Workers
+          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>
+            🔔 Notifications
           </div>
 
-          {[...workers]
-            .sort((a,b) => b.avg_rating - a.avg_rating)
-            .slice(0,5)
-            .map((w,index) => (
+          {notifications.length === 0 ? (
+            <div style={{ color:'#94a3b8' }}>
+              No notifications
+            </div>
+          ) : (
+            notifications.slice(0,5).map(n => (
               <div
-                key={w.id}
+                key={n.id}
                 style={{
-                  display:'flex',
-                  justifyContent:'space-between',
                   padding:'10px 0',
                   borderBottom:'1px solid rgba(255,255,255,.08)'
                 }}
               >
-                <div>
-                  <div style={{ fontWeight:600 }}>
-                    #{index + 1} {w.name}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize:12,
-                      color:'#94a3b8'
-                    }}
-                  >
-                    Resolved: {w.resolved_count}
-                  </div>
+                <div style={{ fontWeight:600 }}>
+                  {n.title}
                 </div>
 
                 <div
                   style={{
-                    color:'#fbbf24',
-                    fontWeight:700
+                    fontSize:12,
+                    color:'#94a3b8',
+                    marginTop:3
                   }}
                 >
-                  ⭐ {w.avg_rating}
+                  {n.message}
+                </div>
+
+                <div
+                  style={{
+                    display:'flex',
+                    justifyContent:'space-between',
+                    alignItems:'center',
+                    marginTop:6
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize:11,
+                      color:'#64748b'
+                    }}
+                  >
+                    {new Date(n.created_at).toLocaleString('en-IN')}
+                  </div>
+
+                  {!n.is_read ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await notifAPI.markRead(n.id)
+
+                          setNotifications(prev =>
+                            prev.map(item =>
+                              item.id === n.id
+                                ? { ...item, is_read: true }
+                                : item
+                            )
+                          )
+                        } catch (err) {
+                          console.error(err)
+                        }
+                      }}
+                      style={{
+                        background:'transparent',
+                        border:'none',
+                        color:'#3b82f6',
+                        cursor:'pointer',
+                        fontSize:12,
+                        fontWeight:600
+                      }}
+                    >
+                      Mark Read
+                    </button>
+                  ) : (
+                    <span
+                      style={{
+                        color:'#10b981',
+                        fontSize:11,
+                        fontWeight:600
+                      }}
+                    >
+                      ✓ Read
+                    </span>
+                  )}
                 </div>
               </div>
-            ))}
+            ))
+          )}
         </Card>
-      </div>
+        </div>
+        
+        {/* Priority breakdown */}
+        <Card
+          style={{
+            marginTop:16
+          }}
+        >
+            <div
+              style={{
+                fontSize:14,
+                fontWeight:700,
+                marginBottom:16
+              }}
+            >
+              🏆 Worker Leaderboard
+            </div>
+         
+
+          <table
+            style={{
+              width:'100%',
+              borderCollapse:'collapse',
+              fontSize:12
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  borderBottom:'1px solid rgba(255,255,255,.1)'
+                }}
+              >
+                <th align="left">Worker</th>
+                <th align="center">Assigned</th>
+                <th align="center">Resolved</th>
+                <th align="center">Active</th>
+                <th>⭐ Rating</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {[...workers]
+                .sort((a,b) => b.avg_rating - a.avg_rating)
+                .map((w,index) => (
+                  <tr
+                    key={w.id}
+                    style={{
+                      borderBottom:'1px solid rgba(255,255,255,.05)'
+                    }}
+                  >
+                    <td
+                      style={{
+                        padding:'10px 0',
+                        fontWeight:600
+                      }}
+                    >
+                      {index === 0 && '🥇 '}
+                      {index === 1 && '🥈 '}
+                      {index === 2 && '🥉 '}
+                      {w.name}
+                    </td>
+
+                    <td align="center">
+                      {w.assigned_count}
+                    </td>
+
+                    <td align="center">
+                      {w.resolved_count}
+                    </td>
+
+                    <td align="center">
+                      {(w.assigned_count || 0) - (w.resolved_count || 0)}
+                    </td>
+
+                    <td
+                      align="center"
+                      style={{
+                        color:'#fbbf24',
+                        fontWeight:700
+                      }}
+                    >
+                      {Number(w.avg_rating || 0).toFixed(1)}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </Card>
+      
+      </>
     )}
     </Layout>
   )

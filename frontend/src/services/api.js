@@ -82,8 +82,15 @@ export const complaintAPI = {
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
 export const analyticsAPI = {
-  overview:    ()    => api.get('/analytics/'),
-  department:  (p='') => api.get(`/analytics/department/?${p}`),
+  overview: () => api.get('/analytics/'),
+
+  department: (p='') =>
+    api.get(`/analytics/department/?${p}`),
+
+  exportWorkersPDF: () =>
+    api.get('/analytics/export-workers-pdf/', {
+      responseType: 'blob'
+    }),
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────

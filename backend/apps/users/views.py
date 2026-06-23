@@ -96,10 +96,18 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        if self.request.user.is_admin_user:
-            return User.objects.all()
-        return User.objects.filter(id=self.request.user.id)
+        user = self.request.user
 
+        if user.is_admin_user:
+            return User.objects.all()
+
+        if user.is_department_admin:
+            return User.objects.filter(
+                department=user.department,
+                role='worker'
+            )
+
+        return User.objects.filter(id=user.id)
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])

@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Complaint, ComplaintUpdate, Feedback
 from apps.notifications.models import Notification
+from apps.users.models import User
+from apps.notifications.email_utils import send_complaint_email
 
 class ComplaintUpdateSerializer(serializers.ModelSerializer):
     updated_by_name = serializers.CharField(source='updated_by.name', read_only=True)
@@ -83,7 +85,7 @@ class ComplaintSerializer(serializers.ModelSerializer):
     has_feedback     = serializers.SerializerMethodField()
     image_url        = serializers.SerializerMethodField()
     frequency        = serializers.SerializerMethodField()
-    
+    is_escalated = serializers.BooleanField(read_only=True)
 
     class Meta:
         model  = Complaint
@@ -100,6 +102,7 @@ class ComplaintSerializer(serializers.ModelSerializer):
             'is_anonymous', 'views', 'frequency',
             'created_at', 'updated_at', 'resolved_at',
             'updates', 'feedback', 'has_feedback',
+            'is_escalated',
         ]
         read_only_fields = ['id', 'user', 'priority', 'priority_score',
                             'created_at', 'updated_at', 'resolved_at']
@@ -146,9 +149,91 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
             has_image          = bool(complaint.image),
             department_name    = complaint.department.name if complaint.department else '',
         )
-        complaint.priority       = result['priority']
+        complaint.priority = result['priority']
         complaint.priority_score = result['score']
+
+        # Auto Worker Assignment
+        workers = User.objects.filter(
+            role='worker',
+            department=complaint.department,
+            is_active=True
+        )
+
+        if workers.exists():
+
+            selected_worker = min(
+                workers,
+                key=lambda w: Complaint.objects.filter(
+                    assigned_to=w,
+                    status__in=['pending', 'in_progress']
+                ).count()
+            )
+
+            complaint.assigned_to = selected_worker
+
+        
         complaint.save()
+        send_complaint_email(
+            complaint.user.email,
+            "Complaint Submitted Successfully",
+            f"""
+        Your complaint has been submitted successfully.
+
+        Title: {complaint.title}
+        Priority: {complaint.priority}
+        Status: {complaint.status}
+
+        Thank you for using IntelliFix.
+        """
+        )
+        # Notify Department Admins
+
+        dept_admins = User.objects.filter(
+            role='department_admin',
+            department=complaint.department,
+            is_active=True
+        )
+
+        for admin in dept_admins:
+            Notification.objects.create(
+                user=admin,
+                complaint=complaint,
+                type='system',
+                title='New Complaint Received',
+                message=f'A new complaint "{complaint.title}" has been submitted.'
+            )
+            if not complaint.assigned_to:
+                for admin in dept_admins:
+                    Notification.objects.create(
+                        user=admin,
+                        complaint=complaint,
+                        type='system',
+                        title='No Workers Available',
+                        message=f'Complaint "{complaint.title}" could not be auto-assigned because no active workers are available.'
+                    )
+
+        # Notification
+        if complaint.assigned_to:
+            Notification.objects.create(
+                user=complaint.assigned_to,
+                complaint=complaint,
+                type='assignment',
+                title='New Complaint Assigned',
+                message=f'Complaint "{complaint.title}" has been automatically assigned to you.'
+            )
+            send_complaint_email(
+                complaint.assigned_to.email,
+                "New Complaint Assigned",
+                f"""
+            A new complaint has been assigned to you.
+
+            Title: {complaint.title}
+            Priority: {complaint.priority}
+
+            Please review it in IntelliFix.
+            """
+            )
+
         return complaint
 
 
@@ -203,6 +288,20 @@ class ComplaintStatusSerializer(serializers.ModelSerializer):
             # Send notification
             try:
                 send_status_notification(instance)
+                send_complaint_email(
+                    instance.user.email,
+                    "Complaint Status Updated",
+                    f"""
+                Your complaint status has changed.
+
+                Title: {instance.title}
+
+                Old Status: {old_status}
+                New Status: {instance.status}
+
+                Thank you for using IntelliFix.
+                """
+                )
             except Exception:
                 pass
 

@@ -59,6 +59,8 @@ class Complaint(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='assigned_complaints'
     )
+    is_escalated = models.BooleanField(default=False)
+    escalated_at = models.DateTimeField(null=True, blank=True)
 
     # Timestamps
     created_at      = models.DateTimeField(auto_now_add=True)

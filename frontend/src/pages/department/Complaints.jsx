@@ -71,6 +71,21 @@ export default function DeptComplaints() {
                     <span style={{ fontSize:13, fontWeight:700 }}>{c.title}</span>
                     <PriorityBadge priority={c.priority} />
                     <Badge type={c.status} />
+
+                    {c.is_escalated && (
+                      <span
+                        style={{
+                          background:'#dc2626',
+                          color:'white',
+                          padding:'2px 8px',
+                          borderRadius:'999px',
+                          fontSize:'10px',
+                          fontWeight:'700'
+                        }}
+                      >
+                        🚨 Escalated
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize:11, color:T.tx2, marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.description}</div>
                   <div style={{ display:'flex', gap:12, fontSize:11, color:T.tx3, flexWrap:'wrap' }}>
@@ -175,9 +190,24 @@ export function DeptComplaintDetail() {
         <Card>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
             <h2 style={{ fontSize:18, fontWeight:800 }}>{c.title}</h2>
-            <div style={{ display:'flex', gap:8 }}>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
               <PriorityBadge priority={c.priority} />
               <Badge type={c.status} />
+
+              {c.is_escalated && (
+                <span
+                  style={{
+                    background:'#dc2626',
+                    color:'white',
+                    padding:'4px 10px',
+                    borderRadius:'999px',
+                    fontSize:'11px',
+                    fontWeight:'700'
+                  }}
+                >
+                  🚨 Escalated
+                </span>
+              )}
             </div>
           </div>
           <div style={{ fontSize:13, color:T.tx2, lineHeight:1.65, marginBottom:14 }}>{c.description}</div>

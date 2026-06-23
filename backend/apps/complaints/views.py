@@ -28,8 +28,11 @@ class ComplaintListCreateView(generics.ListCreateAPIView):
     filterset_fields   = ['status', 'priority', 'department']
     search_fields      = ['title', 'description', 'location']
     ordering_fields    = ['priority_score', 'created_at', 'status']
-    ordering           = ['-priority_score', '-created_at']
-
+    ordering = [
+        '-is_escalated',
+        '-priority_score',
+        '-created_at'
+    ]
     def get_queryset(self):
         u  = self.request.user
         qs = Complaint.objects.select_related(
@@ -131,6 +134,22 @@ class FeedbackCreateView(generics.CreateAPIView):
         return {'request': self.request}
     def perform_create(self, serializer):
             feedback = serializer.save()
+            from apps.notifications.email_utils import send_complaint_email
+            if complaint.assigned_to:
+                send_complaint_email(
+                    complaint.assigned_to.email,
+                    "New Feedback Received",
+                    f"""
+            You received a new rating.
+
+            Complaint: {complaint.title}
+
+            Rating: {feedback.rating}/5
+
+            Comment:
+            {feedback.comment}
+            """
+                )
 
             complaint = feedback.complaint
 
@@ -150,3 +169,25 @@ def my_complaints(request):
     qs = Complaint.objects.filter(user=request.user).select_related('department', 'assigned_to').prefetch_related('feedback')
     s  = ComplaintSerializer(qs, many=True, context={'request': request})
     return Response(s.data)
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+from .escalation import run_escalation_check
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def trigger_escalation(request):
+
+    if not request.user.is_department_admin:
+        return Response(
+            {'error': 'Only Department Admin can run escalation'},
+            status=403
+        )
+
+    run_escalation_check()
+
+    return Response({
+        'message': 'Escalation check completed successfully'
+    })
