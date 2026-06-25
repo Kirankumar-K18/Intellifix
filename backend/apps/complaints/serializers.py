@@ -3,6 +3,12 @@ from .models import Complaint, ComplaintUpdate, Feedback
 from apps.notifications.models import Notification
 from apps.users.models import User
 from apps.notifications.email_utils import send_complaint_email
+from .ai_priority import (
+    predict_severity,
+    get_population_score,
+    get_frequency_score,
+    calculate_priority
+)
 
 class ComplaintUpdateSerializer(serializers.ModelSerializer):
     updated_by_name = serializers.CharField(source='updated_by.name', read_only=True)
@@ -124,9 +130,13 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Complaint
         fields = [
-            'title', 'description', 'location', 'address',
-            'image', 'severity', 'population_affected',
-            'department', 'is_anonymous',
+            'title',
+            'description',
+            'location',
+            'address',
+            'image',
+            'department',
+            'is_anonymous',
         ]
 
     def create(self, validated_data):
@@ -134,23 +144,56 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         request    = self.context['request']
         complaint  = Complaint(**validated_data)
         complaint.user = request.user
+        from .location_ai import get_coordinates
 
-        # Calculate frequency before save
-        freq = Complaint.objects.filter(
-            department=complaint.department
-        ).count()
+        coords = get_coordinates(complaint.location)
+
+        if coords:
+            complaint.latitude = coords["latitude"]
+            complaint.longitude = coords["longitude"]
+        severity = predict_severity(
+            complaint.description
+        )
+
+        population_score = get_population_score(
+            complaint.location
+        )
+
+        frequency_score = get_frequency_score(
+            complaint.location
+        )
+
 
         # ML priority prediction
         result = predict_priority(
-            description        = complaint.description,
-            severity           = complaint.severity,
-            population_affected = complaint.population_affected,
-            frequency          = freq,
-            has_image          = bool(complaint.image),
-            department_name    = complaint.department.name if complaint.department else '',
+            description=complaint.description,
+            severity=severity,
+            population_affected=population_score,
+            frequency=frequency_score,
+            has_image=bool(complaint.image),
+            department_name=complaint.department.name if complaint.department else "",
         )
-        complaint.priority = result['priority']
-        complaint.priority_score = result['score']
+        
+        ml_score = result['score']
+
+        final_score = (
+            ml_score * 0.6 +
+            population_score * 0.25 +
+            frequency_score * 0.15
+        )
+        complaint.severity = severity
+        complaint.population_score = population_score
+        complaint.frequency_score = frequency_score
+        complaint.priority_score = round(final_score, 2)
+
+        if final_score >= 4.5:
+            complaint.priority = "critical"
+        elif final_score >= 3.5:
+            complaint.priority = "high"
+        elif final_score >= 2:
+            complaint.priority = "medium"
+        else:
+            complaint.priority = "low"
 
         # Auto Worker Assignment
         workers = User.objects.filter(

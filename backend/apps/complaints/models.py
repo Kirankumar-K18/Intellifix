@@ -40,6 +40,8 @@ class Complaint(models.Model):
     description     = models.TextField()
     location        = models.CharField(max_length=300)
     address         = models.TextField(blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
 
     # Image
     image           = models.ImageField(upload_to=complaint_image_path, null=True, blank=True)
@@ -50,7 +52,9 @@ class Complaint(models.Model):
 
     # ML outputs
     priority        = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
-    priority_score  = models.FloatField(default=0.0)
+    population_score = models.FloatField(default=0)
+    frequency_score = models.FloatField(default=0)
+    priority_score = models.FloatField(default=0)
     ai_department_suggestion = models.CharField(max_length=100, blank=True)
 
     # Status tracking

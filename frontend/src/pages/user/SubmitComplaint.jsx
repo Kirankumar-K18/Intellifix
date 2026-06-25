@@ -164,10 +164,9 @@ export default function SubmitComplaint() {
   const { user }   = useAuth()
   const navigate   = useNavigate()
   const [depts,    setDepts]   = useState([])
-  const [form,     setForm]    = useState({ title:'', description:'', location:'', address:'', department:'', severity:'3', population_affected:'1', is_anonymous:false })
+  const [form,     setForm]    = useState({ title:'', description:'', location:'', address:'', department:'', is_anonymous:false })
   const [photo,    setPhoto]   = useState(null)
   const [chatbot,  setChatbot] = useState({ open:false, loading:false, suggestions:[] })
-  const [priority, setPri]     = useState(null)
   const [showCam,  setShowCam] = useState(false)
   const [loading,  setLoading] = useState(false)
   const [errors,   setErrors]  = useState({})
@@ -193,21 +192,6 @@ export default function SubmitComplaint() {
     setChatbot(c => ({ ...c, open:false }))
     toast.success(`Department set to: ${s.department}`)
   }
-
-  const predictPriority = async () => {
-    if (!form.description || !form.department) return
-    try {
-      const dept = depts.find(d => d.id === parseInt(form.department))
-      const { data } = await chatbotAPI.predictPriority({
-        description: form.description, severity: parseInt(form.severity),
-        population_affected: parseInt(form.population_affected),
-        department_name: dept?.name || '', has_image: !!photo,
-      })
-      setPri(data)
-    } catch {}
-  }
-
-  useEffect(() => { if (form.description && form.department) predictPriority() }, [form.description, form.department, form.severity, form.population_affected, photo]) // eslint-disable-line
 
   const validate = () => {
     const e = {}
@@ -282,24 +266,7 @@ export default function SubmitComplaint() {
 
             <Textarea label="Full Address (optional)" placeholder="Full address for precise location" value={form.address} onChange={e => set('address', e.target.value)} style={{ minHeight:60 }} />
 
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-              <div style={{ marginBottom:14 }}>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:T.tx2, marginBottom:5, textTransform:'uppercase', letterSpacing:.5 }}>
-                  Severity Level: {form.severity}/5
-                </label>
-                <input type="range" min="1" max="5" value={form.severity} onChange={e => set('severity', e.target.value)}
-                  style={{ width:'100%', accentColor:T.pri }} />
-                <div style={{ display:'flex', justifyContent:'space-between', fontSize:9, color:T.tx3 }}><span>Minor</span><span>Critical</span></div>
-              </div>
-              <div style={{ marginBottom:14 }}>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:T.tx2, marginBottom:5, textTransform:'uppercase', letterSpacing:.5 }}>
-                  People Affected: ~{form.population_affected}
-                </label>
-                <input type="range" min="1" max="1000" step="5" value={form.population_affected} onChange={e => set('population_affected', e.target.value)}
-                  style={{ width:'100%', accentColor:T.pri }} />
-                <div style={{ display:'flex', justifyContent:'space-between', fontSize:9, color:T.tx3 }}><span>1</span><span>1000+</span></div>
-              </div>
-            </div>
+            
 
             {/* Photo section */}
             <div style={{ marginBottom:14 }}>
@@ -352,28 +319,6 @@ export default function SubmitComplaint() {
                 </div>
               )}
             </div>
-
-            {/* AI Priority Preview */}
-            {priority && (
-              <div style={{ background:T.bg3, border:`1px solid ${T.brd}`, borderRadius:10, padding:14, marginBottom:14 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:T.tx3, marginBottom:8 }}>🤖 AI PRIORITY PREDICTION</div>
-                <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-                  <div style={{ fontSize:18, fontWeight:800, color: PRI_COLORS[priority.priority] || T.pri }}>
-                    {priority.priority?.toUpperCase()}
-                  </div>
-                  <div style={{ fontSize:12, color:T.tx2 }}>Score: <strong>{priority.score}/100</strong></div>
-                  {priority.breakdown && (
-                    <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                      {Object.entries(priority.breakdown).map(([k,v]) => (
-                        <span key={k} style={{ fontSize:10, background:T.surf, padding:'2px 7px', borderRadius:6, color:T.tx2 }}>
-                          {k.replace('_score','').replace('_',' ')}: {v}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18 }}>
               <input type="checkbox" id="anon" checked={form.is_anonymous} onChange={e => set('is_anonymous', e.target.checked)} style={{ width:16, height:16, accentColor:T.pri }} />
