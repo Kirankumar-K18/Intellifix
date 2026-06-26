@@ -52,3 +52,10 @@ Thumbs.db
 
 # Docker
 *.pid
+
+# AI datasets and models
+ai/OIDv6/
+ai/dataset/
+ai/models/
+*.zip
+*.keras

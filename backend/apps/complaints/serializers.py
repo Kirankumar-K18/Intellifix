@@ -6,8 +6,7 @@ from apps.notifications.email_utils import send_complaint_email
 from .ai_priority import (
     predict_severity,
     get_population_score,
-    get_frequency_score,
-    calculate_priority
+    get_frequency_score
 )
 
 class ComplaintUpdateSerializer(serializers.ModelSerializer):
@@ -96,8 +95,8 @@ class ComplaintSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Complaint
         fields = [
-            'id', 'title', 'description', 'location', 'address',
-            'image', 'image_url', 'severity', 'population_affected',
+            'id', 'title', 'description', 'location', 'address','latitude',
+            'longitude','image', 'image_url', 'severity', 'population_affected',
             'priority', 'priority_score', 'ai_department_suggestion',
             'status', 'department', 'department_name',
             'user', 'user_name', 'user_email',
@@ -133,6 +132,8 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'location',
+            'latitude',
+            'longitude',
             'address',
             'image',
             'department',
@@ -146,11 +147,14 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         complaint.user = request.user
         from .location_ai import get_coordinates
 
-        coords = get_coordinates(complaint.location)
+        if complaint.latitude is None or complaint.longitude is None:
 
-        if coords:
-            complaint.latitude = coords["latitude"]
-            complaint.longitude = coords["longitude"]
+            coords = get_coordinates(complaint.location)
+
+            if coords:
+                complaint.latitude = coords["latitude"]
+                complaint.longitude = coords["longitude"]
+                complaint.address = coords["address"]
         severity = predict_severity(
             complaint.description
         )
@@ -185,6 +189,9 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         complaint.population_score = population_score
         complaint.frequency_score = frequency_score
         complaint.priority_score = round(final_score, 2)
+        complaint.ai_department_suggestion = (
+            complaint.department.name if complaint.department else ""
+        )
 
         if final_score >= 4.5:
             complaint.priority = "critical"
@@ -349,3 +356,16 @@ class ComplaintStatusSerializer(serializers.ModelSerializer):
                 pass
 
         return instance
+    
+class ComplaintMapSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Complaint
+        fields = [
+            'id',
+            'title',
+            'latitude',
+            'longitude',
+            'priority',
+            'status',
+            'location'
+        ]

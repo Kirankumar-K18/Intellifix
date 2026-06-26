@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    ComplaintListCreateView, ComplaintDetailView,
+    ComplaintListCreateView, ComplaintDetailView,complaint_map,
     FeedbackListView, FeedbackCreateView, my_complaints
 )
 from .views import trigger_escalation
@@ -14,5 +14,10 @@ urlpatterns = [
         'run-escalation/',
         trigger_escalation,
         name='run-escalation'
+    ),
+    path(
+        'map/',
+        complaint_map,
+        name='complaint-map'
     ),
 ]

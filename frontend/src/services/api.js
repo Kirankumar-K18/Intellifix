@@ -78,6 +78,9 @@ export const complaintAPI = {
   delete:   id      => api.delete(`/complaints/${id}/`),
   addFeedback:  d   => api.post('/complaints/feedback/add/', d),
   getFeedback:  ()  => api.get('/complaints/feedback/'),
+
+  // ⭐ NEW
+  getMap: () => api.get('/complaints/map/'),
 }
 
 // ── Analytics ─────────────────────────────────────────────────────────────────

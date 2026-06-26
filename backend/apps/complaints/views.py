@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from apps.notifications.models import Notification
-
+from .serializers import ComplaintMapSerializer
 from .models import Complaint, Feedback
 from .serializers import (
     ComplaintSerializer, ComplaintCreateSerializer,
@@ -191,3 +191,29 @@ def trigger_escalation(request):
     return Response({
         'message': 'Escalation check completed successfully'
     })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def complaint_map(request):
+
+    user = request.user
+
+    if not user.is_department_admin:
+        return Response(
+            {"detail": "Only Department Admin can access map."},
+            status=403
+        )
+
+    complaints = Complaint.objects.filter(
+        department=user.department
+    ).exclude(
+        latitude__isnull=True,
+        longitude__isnull=True
+    )
+
+    serializer = ComplaintMapSerializer(
+        complaints,
+        many=True
+    )
+
+    return Response(serializer.data)

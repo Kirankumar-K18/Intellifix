@@ -18,6 +18,7 @@ import DeptComplaints from './pages/department/Complaints'
 import DeptComplaintDetail from './pages/department/ComplaintDetail'
 import DeptAnalytics  from './pages/department/Analytics'
 import Workers from './pages/department/Workers'
+import MapPage from './pages/department/MapPage'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -85,6 +86,14 @@ export default function App() {
           element={
             <PrivateRoute roles={['worker']}>
               <WorkerPerformance />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/department/map"
+          element={
+            <PrivateRoute roles={['department_admin']}>
+              <MapPage />
             </PrivateRoute>
           }
         />

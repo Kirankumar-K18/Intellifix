@@ -251,6 +251,7 @@ const NAV_LINKS = {
     { to:'/department/complaints', icon:'📋', label:'Complaints' },
     { to:'/department/workers', icon:'👷', label:'Workers' },
     { to:'/department/analytics', icon:'📊', label:'Analytics' },
+    { to:'/department/map', icon:'🗺️', label:'Map' },
   ],
 
   admin: [

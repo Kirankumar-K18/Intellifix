@@ -164,7 +164,16 @@ export default function SubmitComplaint() {
   const { user }   = useAuth()
   const navigate   = useNavigate()
   const [depts,    setDepts]   = useState([])
-  const [form,     setForm]    = useState({ title:'', description:'', location:'', address:'', department:'', is_anonymous:false })
+  const [form, setForm] = useState({
+    title:'',
+    description:'',
+    location:'',
+    address:'',
+    latitude:null,
+    longitude:null,
+    department:'',
+    is_anonymous:false
+  })
   const [photo,    setPhoto]   = useState(null)
   const [chatbot,  setChatbot] = useState({ open:false, loading:false, suggestions:[] })
   const [showCam,  setShowCam] = useState(false)
@@ -174,6 +183,65 @@ export default function SubmitComplaint() {
   useEffect(() => { deptAPI.getAll().then(r => setDepts(r.data.results || r.data)).catch(() => {}) }, [])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const useCurrentLocation = () => {
+
+    if (!navigator.geolocation) {
+        toast.error("Geolocation not supported");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+
+        async ({ coords }) => {
+          
+
+            set("latitude", coords.latitude);
+            set("longitude", coords.longitude);
+
+            try {
+
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}`
+                );
+
+                const data = await res.json();
+
+                // Save only the full address
+                set("address", data.display_name);
+
+                // If the location box is empty, fill it with the full address.
+                // Otherwise, leave the user's text unchanged.
+                if (!form.location.trim()) {
+                    set("location", data.display_name);
+                }
+
+            } catch {
+
+                set(
+                    "location",
+                    "Current Location"
+                );
+
+            }
+
+            toast.success("Location detected");
+
+        },
+
+        () => toast.error("Unable to fetch location"),
+
+        {
+                  
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+      
+        }
+
+    );
+
+};
 
   const openChatbot = async () => {
     if (form.description.length < 10) { toast.error('Enter at least 10 characters description first.'); return }
@@ -211,6 +279,10 @@ export default function SubmitComplaint() {
       const fd = new FormData()
       Object.entries(form).forEach(([k, v]) => { if (v !== '' && v !== null && v !== undefined) fd.append(k, v) })
       if (photo?.blob) fd.append('image', photo.blob, photo.filename || 'photo.jpg')
+      if (photo?.latitude) {
+          fd.append("latitude", photo.latitude)
+          fd.append("longitude", photo.longitude)
+      }
       await complaintAPI.create(fd)
       toast.success('Complaint submitted successfully!')
       navigate('/user/complaints')
@@ -261,7 +333,47 @@ export default function SubmitComplaint() {
                 </select>
                 {errors.department && <div style={{ fontSize:11, color:T.err, marginTop:4 }}>{errors.department}</div>}
               </div>
-              <Input label="Location *" placeholder="Area / Street / Landmark" value={form.location} onChange={e => set('location', e.target.value)} error={errors.location} />
+              <div>
+                <label
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: T.tx2,
+                    marginBottom: 5,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Location *
+
+                  <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    style={{
+                      background: "linear-gradient(135deg,#10b981,#059669)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "3px 8px",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    📍 Current Location
+                  </button>
+                </label>
+
+                <Input
+                  placeholder="Area / Street / Landmark"
+                  value={form.location}
+                  onChange={(e) => set("location", e.target.value)}
+                  error={errors.location}
+                />
+              </div>
             </div>
 
             <Textarea label="Full Address (optional)" placeholder="Full address for precise location" value={form.address} onChange={e => set('address', e.target.value)} style={{ minHeight:60 }} />
@@ -357,7 +469,7 @@ export default function SubmitComplaint() {
       </Modal>
 
       {/* Camera Modal */}
-      {showCam && <CameraCapture username={user?.name?.split(' ')[0]?.toLowerCase() || 'user'} onCapture={p => { setPhoto(p); if (!form.location && p.latitude) set('location', `${p.latitude.toFixed(4)}, ${p.longitude.toFixed(4)}`) }} onClose={() => setShowCam(false)} />}
+      {showCam && <CameraCapture username={user?.name?.split(' ')[0]?.toLowerCase() || 'user'} onCapture={(p) => {setPhoto(p);if (p.latitude) {set("latitude", p.latitude);set("longitude", p.longitude);}}} />}
     </Layout>
   )
 }

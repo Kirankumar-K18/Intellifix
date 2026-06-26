@@ -89,7 +89,7 @@ export default function DeptComplaints() {
                   </div>
                   <div style={{ fontSize:11, color:T.tx2, marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.description}</div>
                   <div style={{ display:'flex', gap:12, fontSize:11, color:T.tx3, flexWrap:'wrap' }}>
-                    <span>📍 {c.location}</span>
+                    <span>📍 {c.address || c.location}</span>
 
                     <span>
                       👤 {c.is_anonymous ? 'Anonymous' : c.user_name}
@@ -231,17 +231,62 @@ export function DeptComplaintDetail() {
             ))}
           </div>
         </Card>
+        {c.latitude && c.longitude && (
+              <Card>
+                <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>
+                  📍 Location
+                </div>
 
+                <div style={{ marginBottom:12 }}>
+                  {c.address || c.location}
+                </div>
+
+                <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    🧭 Navigate
+                </a>
+              </Card>
+            )}
+        
         {/* Photo */}
         {c.image_url && (
           <Card>
-            <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>📷 Photo Evidence</div>
-            <img src={c.image_url} alt="Evidence" style={{ width:'100%', maxHeight:300, objectFit:'cover', borderRadius:9 }} />
-            <div style={{ marginTop:10, display:'flex', flexDirection:'column', gap:4, fontSize:12, color:T.tx2 }}>
-              {c.latitude && <div>📍 GPS: {Math.abs(c.latitude).toFixed(5)}°{c.latitude>=0?'N':'S'}, {Math.abs(c.longitude).toFixed(5)}°{c.longitude>=0?'E':'W'}
-                <a href={`https://maps.google.com?q=${c.latitude},${c.longitude}`} target="_blank" rel="noopener noreferrer" style={{ color:T.pri, marginLeft:6, fontSize:11 }}>Maps ↗</a>
-              </div>}
-              {c.photo_timestamp && <div>🕐 {new Date(c.photo_timestamp).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'medium'})}</div>}
+            <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>
+              📷 Photo Evidence
+            </div>
+
+            <img
+              src={c.image_url}
+              alt="Evidence"
+              style={{
+                width:'100%',
+                maxHeight:300,
+                objectFit:'cover',
+                borderRadius:9
+              }}
+            />
+
+            <div
+              style={{
+                marginTop:10,
+                display:'flex',
+                flexDirection:'column',
+                gap:4,
+                fontSize:12,
+                color:T.tx2
+              }}
+            >
+              {c.photo_timestamp && (
+                <div>
+                  🕐 {new Date(c.photo_timestamp).toLocaleString('en-IN',{
+                    dateStyle:'medium',
+                    timeStyle:'medium'
+                  })}
+                </div>
+              )}
             </div>
           </Card>
         )}
