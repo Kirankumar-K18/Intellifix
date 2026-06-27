@@ -469,7 +469,20 @@ export default function SubmitComplaint() {
       </Modal>
 
       {/* Camera Modal */}
-      {showCam && <CameraCapture username={user?.name?.split(' ')[0]?.toLowerCase() || 'user'} onCapture={(p) => {setPhoto(p);if (p.latitude) {set("latitude", p.latitude);set("longitude", p.longitude);}}} />}
+      {showCam && (
+        <CameraCapture
+          username={user?.name?.split(' ')[0]?.toLowerCase() || 'user'}
+          onCapture={(p) => {
+            setPhoto(p)
+
+            if (p.latitude) {
+              set("latitude", p.latitude)
+              set("longitude", p.longitude)
+            }
+          }}
+          onClose={() => setShowCam(false)}
+        />
+      )}
     </Layout>
   )
 }

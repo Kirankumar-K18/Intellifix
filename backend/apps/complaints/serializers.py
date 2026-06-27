@@ -3,6 +3,7 @@ from .models import Complaint, ComplaintUpdate, Feedback
 from apps.notifications.models import Notification
 from apps.users.models import User
 from apps.notifications.email_utils import send_complaint_email
+from apps.complaints.ai.image_classifier import verify_image
 from .ai_priority import (
     predict_severity,
     get_population_score,
@@ -139,14 +140,18 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
             'department',
             'is_anonymous',
         ]
-
     def create(self, validated_data):
-        from ml.predictor import predict_priority
-        request    = self.context['request']
-        complaint  = Complaint(**validated_data)
+
+        request = self.context["request"]
+
+        complaint = Complaint(**validated_data)
         complaint.user = request.user
+
         from .location_ai import get_coordinates
 
+        # ---------------------------------
+        # Auto Detect Coordinates
+        # ---------------------------------
         if complaint.latitude is None or complaint.longitude is None:
 
             coords = get_coordinates(complaint.location)
@@ -155,6 +160,50 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
                 complaint.latitude = coords["latitude"]
                 complaint.longitude = coords["longitude"]
                 complaint.address = coords["address"]
+
+        # Save first so uploaded image exists on disk
+        complaint.save()
+
+        # ---------------------------------
+        # CNN Image Verification
+        # ---------------------------------
+
+        image_score = 1
+
+        if complaint.image:
+
+            result = verify_image(complaint.image.path)
+
+            complaint.image_prediction = result["prediction"]
+
+            if result["label"] == "relevant":
+
+                complaint.is_image_verified = True
+                complaint.manual_review = False
+                image_score = 5
+
+            elif result["label"] == "uncertain":
+
+                complaint.is_image_verified = False
+                complaint.manual_review = True
+                image_score = 3
+
+            else:
+
+                complaint.is_image_verified = False
+                complaint.manual_review = True
+                image_score = 1
+
+            complaint.save(update_fields=[
+                "image_prediction",
+                "is_image_verified",
+                "manual_review",
+            ])
+
+        # ---------------------------------
+        # AI Priority Prediction
+        # ---------------------------------
+
         severity = predict_severity(
             complaint.description
         )
@@ -167,46 +216,51 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
             complaint.location
         )
 
-
-        # ML priority prediction
-        result = predict_priority(
-            description=complaint.description,
-            severity=severity,
-            population_affected=population_score,
-            frequency=frequency_score,
-            has_image=bool(complaint.image),
-            department_name=complaint.department.name if complaint.department else "",
-        )
-        
-        ml_score = result['score']
-
         final_score = (
-            ml_score * 0.6 +
+            severity * 0.45 +
             population_score * 0.25 +
-            frequency_score * 0.15
+            frequency_score * 0.15 +
+            image_score * 0.15
         )
+
         complaint.severity = severity
         complaint.population_score = population_score
         complaint.frequency_score = frequency_score
         complaint.priority_score = round(final_score, 2)
+
         complaint.ai_department_suggestion = (
-            complaint.department.name if complaint.department else ""
+            complaint.department.name
+            if complaint.department else ""
         )
 
         if final_score >= 4.5:
             complaint.priority = "critical"
+
         elif final_score >= 3.5:
             complaint.priority = "high"
-        elif final_score >= 2:
+
+        elif final_score >= 2.5:
             complaint.priority = "medium"
+
         else:
             complaint.priority = "low"
 
+        complaint.save(update_fields=[
+            "severity",
+            "population_score",
+            "frequency_score",
+            "priority_score",
+            "priority",
+            "ai_department_suggestion",
+        ])
+        # ---------------------------------
         # Auto Worker Assignment
+        # ---------------------------------
+
         workers = User.objects.filter(
-            role='worker',
+            role="worker",
             department=complaint.department,
-            is_active=True
+            is_active=True,
         )
 
         if workers.exists():
@@ -215,78 +269,97 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
                 workers,
                 key=lambda w: Complaint.objects.filter(
                     assigned_to=w,
-                    status__in=['pending', 'in_progress']
-                ).count()
+                    status__in=["pending", "in_progress"],
+                ).count(),
             )
 
             complaint.assigned_to = selected_worker
+            complaint.save(update_fields=["assigned_to"])
 
-        
-        complaint.save()
+        # ---------------------------------
+        # Email to Citizen
+        # ---------------------------------
+
         send_complaint_email(
             complaint.user.email,
             "Complaint Submitted Successfully",
             f"""
-        Your complaint has been submitted successfully.
+    Your complaint has been submitted successfully.
 
-        Title: {complaint.title}
-        Priority: {complaint.priority}
-        Status: {complaint.status}
+    Title: {complaint.title}
+    Priority: {complaint.priority}
+    Status: {complaint.status}
 
-        Thank you for using IntelliFix.
-        """
+    Thank you for using IntelliFix.
+    """
         )
+
+        # ---------------------------------
         # Notify Department Admins
+        # ---------------------------------
 
         dept_admins = User.objects.filter(
-            role='department_admin',
+            role="department_admin",
             department=complaint.department,
-            is_active=True
+            is_active=True,
         )
 
         for admin in dept_admins:
+
             Notification.objects.create(
                 user=admin,
                 complaint=complaint,
-                type='system',
-                title='New Complaint Received',
-                message=f'A new complaint "{complaint.title}" has been submitted.'
+                type="system",
+                title="New Complaint Received",
+                message=f'A new complaint "{complaint.title}" has been submitted.',
             )
-            if not complaint.assigned_to:
-                for admin in dept_admins:
-                    Notification.objects.create(
-                        user=admin,
-                        complaint=complaint,
-                        type='system',
-                        title='No Workers Available',
-                        message=f'Complaint "{complaint.title}" could not be auto-assigned because no active workers are available.'
-                    )
 
-        # Notification
+        # ---------------------------------
+        # No Workers Available
+        # ---------------------------------
+
+        if not complaint.assigned_to:
+
+            for admin in dept_admins:
+
+                Notification.objects.create(
+                    user=admin,
+                    complaint=complaint,
+                    type="system",
+                    title="No Workers Available",
+                    message=f'Complaint "{complaint.title}" could not be auto-assigned because no active workers are available.',
+                )
+
+        # ---------------------------------
+        # Notify Assigned Worker
+        # ---------------------------------
+
         if complaint.assigned_to:
+
             Notification.objects.create(
                 user=complaint.assigned_to,
                 complaint=complaint,
-                type='assignment',
-                title='New Complaint Assigned',
-                message=f'Complaint "{complaint.title}" has been automatically assigned to you.'
+                type="assignment",
+                title="New Complaint Assigned",
+                message=f'Complaint "{complaint.title}" has been automatically assigned to you.',
             )
+
             send_complaint_email(
                 complaint.assigned_to.email,
                 "New Complaint Assigned",
                 f"""
-            A new complaint has been assigned to you.
+                A new complaint has been assigned to you.
 
-            Title: {complaint.title}
-            Priority: {complaint.priority}
+                Title: {complaint.title}
+                Priority: {complaint.priority}
 
-            Please review it in IntelliFix.
-            """
+                Please review it in IntelliFix.
+                """
             )
 
         return complaint
 
-
+        
 class ComplaintStatusSerializer(serializers.ModelSerializer):
     note = serializers.CharField(required=False, allow_blank=True)
 

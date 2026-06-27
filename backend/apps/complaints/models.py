@@ -42,6 +42,11 @@ class Complaint(models.Model):
     address         = models.TextField(blank=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
+    image_prediction = models.FloatField(default=0.0)
+
+    is_image_verified = models.BooleanField(default=False)
+
+    manual_review = models.BooleanField(default=False)
 
     # Image
     image           = models.ImageField(upload_to=complaint_image_path, null=True, blank=True)
