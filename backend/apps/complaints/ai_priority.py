@@ -65,36 +65,60 @@ def get_population_score(location):
 
     text = location.lower()
 
+    # -------- Major Metropolitan Areas --------
     metro = [
-        "mg road",
-        "majestic",
-        "whitefield",
-        "electronic city",
-        "marathahalli"
+        "bengaluru",
+        "bangalore",
+        "mumbai",
+        "delhi",
+        "chennai",
+        "hyderabad",
+        "kolkata",
+        "pune"
     ]
 
-    town = [
-        "tumkur",
+    # -------- Large Cities --------
+    city = [
+        "mysuru",
         "mysore",
-        "mandya",
-        "belgaum"
+        "mangaluru",
+        "hubballi",
+        "hubli",
+        "belagavi",
+        "belgaum",
+        "tumakuru",
+        "tumkur",
+        "shivamogga",
+        "davanagere"
     ]
 
-    village = [
+    # -------- Towns --------
+    town = [
+        "town",
+        "municipality",
+        "taluk"
+    ]
+
+    # -------- Rural Areas --------
+    rural = [
         "village",
+        "grama",
         "halli"
     ]
 
-    if any(x in text for x in metro):
+    if any(area in text for area in metro):
         return 5
 
-    if any(x in text for x in town):
+    elif any(area in text for area in city):
+        return 4
+
+    elif any(area in text for area in town):
         return 3
 
-    if any(x in text for x in village):
-        return 1
+    elif any(area in text for area in rural):
+        return 2
 
-    return 2
+    return 3
 
 
 # -------------------------------

@@ -2,17 +2,39 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { notifAPI } from '../../services/api'
+import { FiLogOut } from "react-icons/fi";
+import { useTheme } from "../../context/ThemeContext";
 
-/* ─── Color tokens ─────────────────────────────────────────────────────── */
+/* Theme Colors (reads from CSS variables) */
+
+const css = (name) =>
+  getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+
 const T = {
-  bg:'#0a0e1a', bg2:'#0f1626', bg3:'#141d35',
-  surf:'#1a2540', surf2:'#1e2d4a',
-  brd:'#2a3a5c', brd2:'#354a6e',
-  pri:'#3b82f6', acc:'#06b6d4', acc2:'#8b5cf6',
-  ok:'#10b981', warn:'#f59e0b', err:'#ef4444',
-  tx:'#e2e8f0', tx2:'#94a3b8', tx3:'#64748b',
-}
+  get bg() { return css("--bg-body"); },
+  get bg2() { return css("--bg-card"); },
+  get bg3() { return css("--bg-card"); },
 
+  get surf() { return css("--bg-card"); },
+  get surf2() { return css("--bg-card"); },
+
+  get brd() { return css("--border"); },
+  get brd2() { return css("--border"); },
+
+  get pri() { return css("--primary"); },
+  get acc() { return "#06b6d4"; },
+  get acc2() { return "#8b5cf6"; },
+
+  get ok() { return "#16a34a"; },
+  get warn() { return "#d97706"; },
+  get err() { return "#dc2626"; },
+
+  get tx() { return css("--text-primary"); },
+  get tx2() { return css("--text-secondary"); },
+  get tx3() { return "#9ca3af"; },
+};
 /* ─── Badge ─────────────────────────────────────────────────────────────── */
 const BADGE_COLORS = {
   pending:     { bg:'rgba(245,158,11,.15)',  color:'#f59e0b', border:'rgba(245,158,11,.3)'  },
@@ -281,16 +303,16 @@ export function Sidebar() {
   const links = NAV_LINKS[user?.role] || []
 
   return (
-    <aside style={{ width:220, minHeight:'100vh', background:T.bg2, borderRight:`1px solid ${T.brd}`, display:'flex', flexDirection:'column', position:'fixed', left:0, top:0, bottom:0, zIndex:100 }}>
+    <aside style={{ width:260, minHeight:'100vh', background:"linear-gradient(180deg,#2E2A63 0%, #3828e7 100%)", borderRight:"1px solid rgba(255,255,255,.08)", display:'flex', flexDirection:'column', position:'fixed', left:0, top:0, bottom:0, zIndex:100 }}>
       {/* Logo */}
-      <div style={{ padding:'20px 16px', borderBottom:`1px solid ${T.brd}`, display:'flex', alignItems:'center', gap:10 }}>
-        <div style={{ width:38, height:38, borderRadius:10, background:'linear-gradient(135deg,#3b82f6,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>🔧</div>
-        <div style={{ fontSize:18, fontWeight:800, letterSpacing:-.5 }}>Intelli<span style={{ color:T.pri }}>Fix</span></div>
+      <div style={{ padding:'18px 20px', borderBottom:`1px solid ${T.brd}`, display:'flex', alignItems:'center', gap:14 }}>
+        <div style={{ width:38, height:38, borderRadius:10, background:"var(--header-bg)", display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>🔧</div>
+        <div style={{fontSize:20,fontWeight:700,color:"#fff"}}>Intelli<span style={{color:"#60A5FA"}}>Fix</span></div>
       </div>
 
       {/* Navigation */}
       <nav style={{ flex:1, padding:'10px 0', overflowY:'auto' }}>
-        <div style={{ padding:'6px 14px 3px', fontSize:9, fontWeight:700, color:T.tx3, letterSpacing:1, textTransform:'uppercase' }}>
+        <div style={{ padding:'6px 14px 3px', fontSize:13, fontWeight:700, color:"rgba(255,255,255,.55)", letterSpacing:1, textTransform:'uppercase' }}>
           {
             user?.role === 'citizen'
               ? 'Citizen Portal'
@@ -309,13 +331,20 @@ export function Sidebar() {
               to={link.to}
               style={{
                 display:'flex', alignItems:'center', gap:10, padding:'9px 14px',
-                color: active ? T.pri : T.tx2,
-                background: active ? 'rgba(59,130,246,.12)' : 'transparent',
-                borderLeft: `2px solid ${active ? T.pri : 'transparent'}`,
+                color: active ? "#FFFFFF" : "rgba(255,255,255,.82)",
+                background: active
+                    ? "rgba(255,255,255,.10)"
+                    : "transparent",
+
+                borderLeft:`3px solid ${
+                    active
+                        ? "#60A5FA"
+                        : "transparent"
+                }`,
                 textDecoration:'none', fontSize:13, fontWeight:500,
                 transition:'all .15s',
               }}
-              onMouseEnter={e => { if (!active) { e.currentTarget.style.background='rgba(255,255,255,.04)'; e.currentTarget.style.color=T.tx; } }}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.background='rgba(255,255,255,.08)'; e.currentTarget.style.color=T.tx; } }}
               onMouseLeave={e => { if (!active) { e.currentTarget.style.background='transparent'; e.currentTarget.style.color=T.tx2; } }}
             >
               <span style={{ fontSize:16, width:18, textAlign:'center' }}>{link.icon}</span>
@@ -329,46 +358,222 @@ export function Sidebar() {
       </nav>
 
       {/* User footer */}
-      <div style={{ padding:12, borderTop:`1px solid ${T.brd}` }}>
+      <div style={{ padding: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+
+      {/* User Card */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "10px",
+          borderRadius: 10,
+          background: "rgba(255,255,255,.05)",
+          marginBottom: 14
+        }}
+      >
         <div
-          style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 10px', borderRadius:9, background:T.surf, cursor:'pointer', transition:'all .15s' }}
-          onClick={async () => { await logout(); navigate('/login') }}
-          onMouseEnter={e => e.currentTarget.style.background=T.surf2}
-          onMouseLeave={e => e.currentTarget.style.background=T.surf}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: "linear-gradient(135deg,#60A5FA,#3B82F6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontWeight: 700
+          }}
         >
-          <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,#3b82f6,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, flexShrink:0 }}>
-            {user?.name?.[0]?.toUpperCase() || 'U'}
+          {user?.name?.[0]?.toUpperCase()}
+        </div>
+
+        <div>
+          <div
+            style={{
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 13
+            }}
+          >
+            {user?.name}
           </div>
-          <div>
-            <div style={{ fontSize:12, fontWeight:600 }}>{user?.name?.split(' ').slice(0,2).join(' ')}</div>
-            <div style={{ fontSize:10, color:T.tx3, textTransform:'capitalize' }}>{user?.role} · Logout</div>
+
+          <div
+            style={{
+              color: "rgba(255,255,255,.55)",
+              fontSize: 11,
+              textTransform: "capitalize"
+            }}
+          >
+            {user?.role}
           </div>
         </div>
       </div>
+
+      {/* Logout Button */}
+
+      <button
+        onClick={async () => {
+          await logout();
+          navigate("/login");
+        }}
+        style={{
+          width: "100%",
+          background: "transparent",
+          border: "none",
+          color: "#f87171",
+          padding: "10px 12px",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          borderRadius: 8,
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 500,
+          transition: ".2s"
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(248,113,113,.12)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "transparent";
+        }}
+      >
+        <>
+          <FiLogOut size={16} />
+          <span>Logout</span>
+        </>
+      </button>
+
+    </div>
     </aside>
   )
 }
 
 /* ─── Page Layout ────────────────────────────────────────────────────────── */
+
 export function Layout({ title, children, action }) {
+
+  const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+
   return (
-    <div style={{ display:'flex', minHeight:'100vh' }}>
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background: "var(--bg-body)"
+      }}
+    >
       <Sidebar />
-      <main style={{ flex:1, marginLeft:220, display:'flex', flexDirection:'column' }}>
-        {/* Top bar */}
-        <div style={{ height:56, background:T.bg2, borderBottom:`1px solid ${T.brd}`, display:'flex', alignItems:'center', padding:'0 24px', gap:12, position:'sticky', top:0, zIndex:50 }}>
-          <h1 style={{ fontSize:17, fontWeight:700, flex:1 }}>{title}</h1>
-          {action}
+
+      <main
+        style={{
+          flex: 1,
+          marginLeft: 260,
+          display: "flex",
+          flexDirection: "column"
+        }}
+      >
+        {/* Top Bar */}
+
+        <div
+          style={{
+            height: "73px",
+            background:"var(--sidebar-bg)",
+            borderBottom: "1px solid rgba(255,255,255,.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 24px",
+            position: "sticky",
+            top: 0,
+            zIndex: 100
+          }}
+        >
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12
+            }}
+          >
+
+            <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#f4f807",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "12px",
+              fontWeight: "500",
+              cursor: "pointer",
+              padding: 0,
+              transition: "opacity .2s ease"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.75";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "1";
+            }}
+          >
+            ← Back
+          </button>
+
+            <h1
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: "#fff"
+              }}
+            >
+              {title}
+            </h1>
+
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12
+            }}
+          >
+
+            {action}
+
+            <button
+              className="btn btn-secondary"
+              onClick={toggleTheme}
+            >
+              {theme === "light" ? "🌙" : "☀"}
+            </button>
+
+          </div>
+
         </div>
-        {/* Content */}
-        <div style={{ padding:24, flex:1 }}>
+
+        <div
+          style={{
+            padding: "24px",
+            flex: 1,
+            background: "var(--bg-body)"
+          }}
+        >
           {children}
         </div>
-      </main>
-    </div>
-  )
-}
 
+      </main>
+
+    </div>
+  );
+}
 /* ─── Table ──────────────────────────────────────────────────────────────── */
 export function Table({ columns, data, onRowClick, emptyIcon, emptyTitle }) {
   if (!data?.length) return <EmptyState icon={emptyIcon} title={emptyTitle} />

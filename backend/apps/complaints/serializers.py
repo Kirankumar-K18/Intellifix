@@ -9,7 +9,7 @@ from .ai_priority import (
     get_population_score,
     get_frequency_score
 )
-
+from django.db import transaction
 class ComplaintUpdateSerializer(serializers.ModelSerializer):
     updated_by_name = serializers.CharField(source='updated_by.name', read_only=True)
 
@@ -140,6 +140,7 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
             'department',
             'is_anonymous',
         ]
+    @transaction.atomic
     def create(self, validated_data):
 
         request = self.context["request"]
@@ -173,6 +174,10 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         if complaint.image:
 
             result = verify_image(complaint.image.path)
+            if result["action"] == "reject":
+                raise serializers.ValidationError({
+                    "image": result["reason"]
+                })
 
             complaint.image_prediction = result["prediction"]
 
@@ -217,10 +222,10 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         )
 
         final_score = (
-            severity * 0.45 +
-            population_score * 0.25 +
-            frequency_score * 0.15 +
-            image_score * 0.15
+            severity * 0.40 +
+            population_score * 0.20 +
+            frequency_score * 0.20 +
+            image_score * 0.20
         )
 
         complaint.severity = severity
