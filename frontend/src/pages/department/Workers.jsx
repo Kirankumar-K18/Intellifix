@@ -12,15 +12,7 @@ import {
   Modal,
   Select
 } from '../../components/common/UI'
-const T = {
-  tx:'#e2e8f0',
-  tx2:'#94a3b8',
-  tx3:'#64748b',
-  bg3:'#0f172a',
-  brd:'#2a3a5c',
-  ok:'#10b981',
-  err:'#ef4444'
-}
+import { T } from "../../styles/theme";
 
 export default function Workers() {
   const [users,   setUsers]  = useState([])

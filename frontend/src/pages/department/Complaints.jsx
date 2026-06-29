@@ -4,7 +4,7 @@ import { complaintAPI, authAPI } from '../../services/api'
 import { Layout, Card, Badge, PriorityBadge, Button, Spinner, EmptyState, Modal, StarRating } from '../../components/common/UI'
 import toast from 'react-hot-toast'
 import { useAuth } from '../../context/AuthContext'
-const T = { pri:'#3b82f6', ok:'#10b981', warn:'#f59e0b', err:'#ef4444', tx:'#e2e8f0', tx2:'#94a3b8', tx3:'#64748b', brd:'#2a3a5c', bg3:'#141d35', surf:'#1a2540' }
+import { T } from "../../styles/theme";
 
 /* ── Department Complaints List ─────────────────────────────────────────────── */
 export default function DeptComplaints() {

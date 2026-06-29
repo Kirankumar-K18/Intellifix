@@ -30,6 +30,10 @@ export function AuthProvider({ children }) {
     setUser(data.user)
     return data.user
   }
+  const register = async (userData) => {
+    const { data } = await authAPI.register(userData);
+    return data;
+  };
 
   const logout = async () => {
     try {
@@ -48,7 +52,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser, setUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, setUser }}>
       {children}
     </AuthContext.Provider>
   )

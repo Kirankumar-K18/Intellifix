@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { complaintAPI, analyticsAPI, notifAPI } from '../../services/api'
 import { Layout, StatCard, Card, Badge, PriorityBadge, Spinner, EmptyState } from '../../components/common/UI'
 import { authAPI } from '../../services/api'
-const T = { pri:'#3b82f6', ok:'#10b981', warn:'#f59e0b', err:'#ef4444', tx:'#e2e8f0', tx2:'#94a3b8', tx3:'#64748b', brd:'#2a3a5c', acc2:'#8b5cf6' }
+import { T } from "../../styles/theme";
 
 export default function DeptDashboard() {
   const { user } = useAuth()

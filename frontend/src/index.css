@@ -9,7 +9,7 @@
   --bg-header:#25224F;
   --bg-sidebar:#25224F;
   --bg-sidebar-hover:#312D63;
-
+  --bg-header:#25224F;
   /* Primary */
   --primary:#0D6EFD;
   --primary-hover:#0B5ED7;
@@ -38,6 +38,7 @@
 
   --bg-sidebar:#1E1B4B;
   --bg-sidebar-hover:#312E81;
+  --bg-header:#1e293b;
 
   --text-primary:#F9FAFB;
   --text-secondary:#9CA3AF;

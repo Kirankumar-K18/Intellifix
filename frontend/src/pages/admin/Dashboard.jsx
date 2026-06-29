@@ -4,8 +4,7 @@ import { authAPI, deptAPI, complaintAPI, analyticsAPI } from '../../services/api
 import { Layout, StatCard, Card, Badge, PriorityBadge, Button, Spinner, EmptyState, Modal, Input, Select, Table } from '../../components/common/UI'
 import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line } from 'recharts'
 import toast from 'react-hot-toast'
-
-const T = { pri:'#3b82f6', ok:'#10b981', warn:'#f59e0b', err:'#ef4444', tx:'#e2e8f0', tx2:'#94a3b8', tx3:'#64748b', brd:'#2a3a5c', bg3:'#141d35', surf:'#1a2540', acc2:'#8b5cf6' }
+import { T } from "../../styles/theme";
 const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899']
 
 /* ═══════════════════════════════════════════════════════

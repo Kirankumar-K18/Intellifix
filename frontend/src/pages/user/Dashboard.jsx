@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { complaintAPI, notifAPI } from '../../services/api'
 import { Layout, StatCard, Card, Badge, PriorityBadge, Button, Spinner, EmptyState } from '../../components/common/UI'
-
-const T = { pri:'#3b82f6', ok:'#10b981', warn:'#f59e0b', err:'#ef4444', tx2:'#94a3b8', tx3:'#64748b', brd:'#2a3a5c', surf:'#1a2540', acc2:'#8b5cf6' }
+import { T } from "../../styles/theme";
 
 export default function UserDashboard() {
   const { user }   = useAuth()
