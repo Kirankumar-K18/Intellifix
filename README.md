@@ -184,9 +184,9 @@ npm run dev          # Starts on http://localhost:3000
   - `has_image` (boolean)
 - **Priority formula:**
   - 40% Severity (keyword boost + user rating)
-  - 30% Population Impact (log-scale)
+  - 20% Population Impact (log-scale)
   - 20% Complaint Frequency
-  - 10% Image Verification
+  - 20% Image Verification
 - **Output:** `low` | `medium` | `high` | `critical`
 - **Endpoint:** `POST /api/chatbot/predict-priority/`
 
