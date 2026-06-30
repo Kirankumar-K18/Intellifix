@@ -35,7 +35,7 @@ export default function UserDashboard() {
       {/* Welcome banner */}
       <div style={{ background:'linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))', border:`1px solid ${T.brd}`, borderRadius:14, padding:'20px 24px', marginBottom:24, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div>
-          <div style={{ fontSize:20, fontWeight:800, marginBottom:4 }}>Welcome back, {user?.name?.split(' ')[0]} 👋</div>
+          <div style={{ fontSize:20, fontWeight:800, marginBottom:4 }}>Welcome, {user?.name?.split(' ')[0]} 👋</div>
           <div style={{ fontSize:13, color:T.tx2 }}>Track your complaints and stay updated on resolutions.</div>
         </div>
         {unreadN > 0 && (

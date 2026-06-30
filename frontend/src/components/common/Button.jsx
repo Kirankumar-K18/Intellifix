@@ -9,6 +9,7 @@ export function Button({
   type = "button",
   variant = "primary",
   disabled = false,
+  loading = false,
   style = {},
   ...props
 }) {
@@ -41,7 +42,7 @@ export function Button({
   return (
     <button
       type={type}
-      disabled={disabled}
+      disabled={disabled || loading}
       onClick={onClick}
       style={{
         height: 42,

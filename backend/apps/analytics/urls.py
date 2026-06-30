@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     overview,
     department_analytics,
-    export_workers_pdf
+    export_workers_pdf,
+    RecentActivityAPIView,
 )
 urlpatterns = [
     path('',           overview,              name='analytics-overview'),
@@ -11,5 +12,9 @@ urlpatterns = [
         'export-workers-pdf/',
         export_workers_pdf,
         name='export-workers-pdf'
+    ),
+    path(
+        "recent-activity/",
+        RecentActivityAPIView.as_view(),
     ),
 ]

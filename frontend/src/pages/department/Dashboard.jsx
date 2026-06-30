@@ -5,7 +5,13 @@ import { complaintAPI, analyticsAPI, notifAPI } from '../../services/api'
 import { Layout, StatCard, Card, Badge, PriorityBadge, Spinner, EmptyState } from '../../components/common/UI'
 import { authAPI } from '../../services/api'
 import { T } from "../../styles/theme";
-
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 export default function DeptDashboard() {
   const { user } = useAuth()
   const isWorker =
@@ -74,13 +80,24 @@ export default function DeptDashboard() {
   }, [isWorker])
 
   if (loading) return <Layout title="Department Dashboard"><Spinner /></Layout>
+  const statusData = [
+    { name: "Pending", value: data?.pending || 0 },
+    { name: "In Progress", value: data?.in_progress || 0 },
+    { name: "Resolved", value: data?.resolved || 0 },
+  ];
+
+  const COLORS = [
+    "#f59e0b",
+    "#3b82f6",
+    "#10b981",
+  ];
 
   return (
     <Layout title={isWorker ? "Worker Dashboard" : "Department Dashboard"}>
       {/* Welcome */}
       <div style={{ background:'linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))', border:`1px solid ${T.brd}`, borderRadius:14, padding:'18px 22px', marginBottom:22 }}>
         <div style={{ fontSize:18, fontWeight:800, marginBottom:3 }}>Welcome, {user?.name?.split(' ')[0]} 👋</div>
-        <div style={{ fontSize:12, color:T.tx2 }}>{isWorker? "👷 Worker Portal": `🏢 ${user?.department_name}`} — Complaints sorted by AI priority score</div>
+        <div style={{ fontSize:12, color:T.tx2 }}>{isWorker? "👷 Worker Portal": `🏢 ${user?.department_name}`} -IntelliFix</div>
       </div>
 
       {/* Stats */}
@@ -129,102 +146,419 @@ export default function DeptDashboard() {
           </Card>
 
           {/* Notifications */}
-          <Card>
-            <h3>🔔 Notifications</h3>
+          <Card
+            style={{
+              height: 420,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                }}
+              >
+                🔔 Recent Notifications
+              </div>
 
+              {notifications.length > 0 && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await notifAPI.markAllRead();
+
+                      setNotifications((prev) =>
+                        prev.map((n) => ({
+                          ...n,
+                          is_read: true,
+                        }))
+                      );
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#3b82f6",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  Mark All Read
+                </button>
+              )}
+            </div>
+
+            {/* Scrollable Notifications */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                paddingRight: 6,
+              }}
+            >
+              {notifications.length === 0 ? (
+                <div
+                  style={{
+                    color: "#94a3b8",
+                    textAlign: "center",
+                    marginTop: 80,
+                    fontSize: 13,
+                  }}
+                >
+                  No notifications
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    style={{
+                      padding: "12px 0",
+                      borderBottom: "1px solid rgba(255,255,255,.08)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 13,
+                      }}
+                    >
+                      {n.title}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#94a3b8",
+                        marginTop: 4,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {n.message}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: 8,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "#64748b",
+                        }}
+                      >
+                        {new Date(n.created_at).toLocaleString("en-IN")}
+                      </span>
+
+                      {!n.is_read ? (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await notifAPI.markRead(n.id);
+
+                              setNotifications((prev) =>
+                                prev.map((item) =>
+                                  item.id === n.id
+                                    ? { ...item, is_read: true }
+                                    : item
+                                )
+                              );
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#3b82f6",
+                            cursor: "pointer",
+                            fontSize: 12,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Mark Read
+                        </button>
+                      ) : (
+                        <span
+                          style={{
+                            color: "#10b981",
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}
+                        >
+                          ✓ Read
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+          </div>
+        )}
+
+        {!isWorker && (
+          <>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 20,
+            alignItems: "stretch",
+          }}
+        >
+        {/* Top priority complaints */}
+        <Card
+          style={{
+            height: 420,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              marginBottom: 16,
+            }}
+          >
+            Complaints by Status
+          </div>
+
+          <ResponsiveContainer
+            width="100%"
+            height={280}
+          >
+            <PieChart>
+              <Pie
+                data={statusData}
+                cx="50%"
+                cy="50%"
+                outerRadius={95}
+                dataKey="value"
+                label={({ percent }) =>
+                  percent > 0
+                    ? `${(percent * 100).toFixed(0)}%`
+                    : ""
+                }
+                labelLine={false}
+              >
+                {statusData.map((entry, index) => (
+                  <Cell
+                    key={index}
+                    fill={COLORS[index]}
+                  />
+                ))}
+              </Pie>
+
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 18,
+              marginTop: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            {statusData.map((item, index) => (
+              <div
+                key={item.name}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 13,
+                }}
+              >
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    background: COLORS[index],
+                  }}
+                />
+
+                <span>
+                  {item.name} ({item.value})
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card
+          style={{
+            height: 420,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+              }}
+            >
+              🔔 Notifications
+            </div>
+
+            {notifications.length > 0 && (
+              <button
+                onClick={async () => {
+                  try {
+                    await notifAPI.markAllRead();
+
+                    setNotifications((prev) =>
+                      prev.map((n) => ({
+                        ...n,
+                        is_read: true,
+                      }))
+                    );
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#3b82f6",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                Mark All Read
+              </button>
+            )}
+          </div>
+
+          {/* Scrollable Notifications */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              paddingRight: 6,
+            }}
+          >
             {notifications.length === 0 ? (
               <div
                 style={{
-                  color: '#94a3b8',
-                  fontSize: 13
+                  color: "#94a3b8",
+                  textAlign: "center",
+                  marginTop: 80,
                 }}
               >
-                No new notifications
+                No notifications
               </div>
             ) : (
-              notifications.slice(0, 5).map(n => (
+              notifications.map((n) => (
                 <div
                   key={n.id}
                   style={{
-                    padding: '10px 0',
-                    borderBottom: '1px solid rgba(255,255,255,.08)'
+                    padding: "12px 0",
+                    borderBottom: "1px solid rgba(255,255,255,.08)",
                   }}
                 >
                   <div
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      gap: 10
+                      fontWeight: 600,
+                      fontSize: 13,
                     }}
                   >
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontWeight: 600,
-                          fontSize: 13
-                        }}
-                      >
-                        {n.title}
-                      </div>
+                    {n.title}
+                  </div>
 
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: '#94a3b8',
-                          marginTop: 3
-                        }}
-                      >
-                        {n.message}
-                      </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#94a3b8",
+                      marginTop: 4,
+                    }}
+                  >
+                    {n.message}
+                  </div>
 
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: '#64748b',
-                          marginTop: 4
-                        }}
-                      >
-                        {new Date(n.created_at).toLocaleString('en-IN')}
-                      </div>
-                    </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: 8,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: "#64748b",
+                      }}
+                    >
+                      {new Date(n.created_at).toLocaleString("en-IN")}
+                    </span>
 
-                    {!n.is_read && (
+                    {!n.is_read ? (
                       <button
                         onClick={async () => {
                           try {
-                            await notifAPI.markRead(n.id)
+                            await notifAPI.markRead(n.id);
 
-                            setNotifications(prev =>
-                              prev.map(item =>
+                            setNotifications((prev) =>
+                              prev.map((item) =>
                                 item.id === n.id
                                   ? { ...item, is_read: true }
                                   : item
                               )
-                            )
+                            );
                           } catch (err) {
-                            console.error(err)
+                            console.error(err);
                           }
                         }}
                         style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#3b82f6',
-                          cursor: 'pointer',
+                          background: "transparent",
+                          border: "none",
+                          color: "#3b82f6",
+                          cursor: "pointer",
                           fontSize: 12,
-                          fontWeight: 600
+                          fontWeight: 600,
                         }}
                       >
                         Mark Read
                       </button>
-                    )}
-
-                    {n.is_read && (
+                    ) : (
                       <span
                         style={{
+                          color: "#10b981",
                           fontSize: 11,
-                          color: '#10b981',
-                          fontWeight: 600
+                          fontWeight: 600,
                         }}
                       >
                         ✓ Read
@@ -234,142 +568,7 @@ export default function DeptDashboard() {
                 </div>
               ))
             )}
-
-            {notifications.length > 5 && (
-              <div
-                style={{
-                  marginTop: 10,
-                  textAlign: 'center',
-                  color: '#3b82f6',
-                  fontSize: 12,
-                  cursor: 'pointer'
-                }}
-              >
-                View All Notifications →
-              </div>
-            )}
-                </Card>
           </div>
-        )}
-
-        {!isWorker && (
-          <>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-        {/* Top priority complaints */}
-        <Card>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-            <div style={{ fontSize:14, fontWeight:700 }}>🔥 High Priority Queue</div>
-            <Link to="/department/complaints" style={{ fontSize:11, color:T.pri }}>View all →</Link>
-          </div>
-          {topComplaints.length === 0
-            ? <EmptyState icon="✅" title="No pending complaints" />
-            : topComplaints.filter(c => c.status !== 'resolved' && c.status !== 'closed').slice(0,5).map(c => (
-              <Link key={c.id} to={`/department/complaints/${c.id}`} style={{ textDecoration:'none', color:'inherit' }}>
-                <div style={{ display:'flex', gap:10, alignItems:'center', padding:'9px 0', borderBottom:`1px solid ${T.brd}`, cursor:'pointer' }}>
-                  <div style={{ width:36, height:36, borderRadius:9, background:`${c.priority==='critical'?'rgba(220,38,38,.15)':c.priority==='high'?'rgba(239,68,68,.15)':'rgba(245,158,11,.15)'}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>
-                    {c.priority==='critical'?'🚨':c.priority==='high'?'🔴':'🟡'}
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:12, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.title}</div>
-                    <div style={{ fontSize:10, color:T.tx3 }}>Score: {c.priority_score?.toFixed(0)} · {c.location}</div>
-                  </div>
-                  <Badge type={c.status} />
-                </div>
-              </Link>
-            ))}
-        </Card>
-        <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>
-            🔔 Notifications
-          </div>
-
-          {notifications.length === 0 ? (
-            <div style={{ color:'#94a3b8' }}>
-              No notifications
-            </div>
-          ) : (
-            notifications.slice(0,5).map(n => (
-              <div
-                key={n.id}
-                style={{
-                  padding:'10px 0',
-                  borderBottom:'1px solid rgba(255,255,255,.08)'
-                }}
-              >
-                <div style={{ fontWeight:600 }}>
-                  {n.title}
-                </div>
-
-                <div
-                  style={{
-                    fontSize:12,
-                    color:'#94a3b8',
-                    marginTop:3
-                  }}
-                >
-                  {n.message}
-                </div>
-
-                <div
-                  style={{
-                    display:'flex',
-                    justifyContent:'space-between',
-                    alignItems:'center',
-                    marginTop:6
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize:11,
-                      color:'#64748b'
-                    }}
-                  >
-                    {new Date(n.created_at).toLocaleString('en-IN')}
-                  </div>
-
-                  {!n.is_read ? (
-                    <button
-                      onClick={async () => {
-                        try {
-                          await notifAPI.markRead(n.id)
-
-                          setNotifications(prev =>
-                            prev.map(item =>
-                              item.id === n.id
-                                ? { ...item, is_read: true }
-                                : item
-                            )
-                          )
-                        } catch (err) {
-                          console.error(err)
-                        }
-                      }}
-                      style={{
-                        background:'transparent',
-                        border:'none',
-                        color:'#3b82f6',
-                        cursor:'pointer',
-                        fontSize:12,
-                        fontWeight:600
-                      }}
-                    >
-                      Mark Read
-                    </button>
-                  ) : (
-                    <span
-                      style={{
-                        color:'#10b981',
-                        fontSize:11,
-                        fontWeight:600
-                      }}
-                    >
-                      ✓ Read
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
         </Card>
         </div>
         

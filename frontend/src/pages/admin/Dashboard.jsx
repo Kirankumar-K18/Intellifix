@@ -35,20 +35,28 @@ export function AdminDashboard() {
         <StatCard label="Total Users"      value={data?.total_users          ?? 0} icon="👥" color={T.acc2} />
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
-        <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>📊 Complaints by Status</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "20px",
+          alignItems: "stretch",
+          marginBottom: "20px",
+        }}
+      >
+        <Card style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>By Status</div>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
-              <Pie data={statusData} cx="50%" cy="50%" outerRadius={80} dataKey="value"
-                label={({ name, percent }) => percent > 0.06 ? `${(percent*100).toFixed(0)}%` : ''}>
-                {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              <Pie data={statusData} cx="50%" cy="50%" outerRadius={95} dataKey="value"
+                label={({name,percent}) => percent>0.05?`${(percent*100).toFixed(0)}%`:''} labelLine={false}>
+                {statusData.map((_,i) => <Cell key={i} fill={COLORS[i%COLORS.length]} />)}
               </Pie>
               <Tooltip contentStyle={{ background:'#1a2540', border:'1px solid #2a3a5c', borderRadius:8, fontSize:12 }} />
             </PieChart>
           </ResponsiveContainer>
           <div style={{ display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center' }}>
-            {statusData.map((d, i) => (
+            {statusData.map((d,i) => (
               <div key={d.name} style={{ display:'flex', alignItems:'center', gap:5, fontSize:11 }}>
                 <div style={{ width:8, height:8, borderRadius:'50%', background:COLORS[i%COLORS.length] }}/>
                 <span style={{ color:T.tx2 }}>{d.name}: {d.value}</span>
@@ -57,13 +65,20 @@ export function AdminDashboard() {
           </div>
         </Card>
 
-        <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>🏢 Complaints by Department</div>
-          <Card>
-            <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>
-              Complaints by Department
-            </div>
-
+        <Card
+          style={{
+            height: "430px",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>Complaints by Department</div>
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+              }}
+            >
             <table style={{ width:'100%', borderCollapse:'collapse' }}>
               <thead>
                 <tr>
@@ -78,17 +93,22 @@ export function AdminDashboard() {
                   .sort((a,b) => b.Complaints - a.Complaints)
                   .map((dept,index) => (
                     <tr key={index}>
-                      <td style={{ padding:'10px' }}>{index + 1}</td>
+                      <td style={{ padding:'10px' }}>{
+                        index===0 ? "🥇" :
+                        index===1 ? "🥈" :
+                        index===2 ? "🥉" :
+                        index+1
+                        }</td>
                       <td style={{ padding:'10px' }}>{dept.name}</td>
-                      <td style={{ padding:'10px', textAlign:'center', fontWeight:'bold' }}>
+                      <td style={{ padding:'10px', textAlign:'center', fontWeight:800,fontSize:16,color:T.pri }}>
                         {dept.Complaints}
                       </td>
                     </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           </Card>
-        </Card>
       </div>
 
       {/* Monthly trend */}
@@ -241,7 +261,6 @@ export function AdminUsers() {
       </div>
     )},
   ]
-
   return (
     <Layout title="User Management" action={<Button onClick={openCreate}>+ Add User</Button>}>
       <div style={{ marginBottom:14 }}>
@@ -399,7 +418,15 @@ export function AdminComplaints() {
 
   return (
     <Layout title="All Complaints">
-      <div style={{ display:'flex', gap:10, marginBottom:14, flexWrap:'wrap' }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "2fr 1fr 1fr 1fr",
+          gap: "12px",
+          marginBottom: "18px",
+          alignItems: "center",
+        }}
+      >
         <input value={search} onChange={e => setS(e.target.value)} placeholder="🔍 Search..."
           style={{ background:T.bg3, border:`1px solid ${T.brd}`, borderRadius:9, padding:'8px 12px', color:T.tx, fontSize:13, fontFamily:'inherit', outline:'none', flex:1, minWidth:160 }} />
         {[
@@ -447,10 +474,21 @@ export function AdminComplaints() {
 export function AdminAnalytics() {
   const [data,    setData]  = useState(null)
   const [loading, setL]     = useState(true)
+  const [activity, setActivity] = useState([]);
 
   useEffect(() => {
-    analyticsAPI.overview().then(r => setData(r.data)).catch(() => {}).finally(() => setL(false))
-  }, [])
+    analyticsAPI
+      .overview()
+      .then((r) => setData(r.data))
+      .catch(() => {})
+      .finally(() => setL(false));
+
+    analyticsAPI
+      .recentActivity()
+      .then((r) => setActivity(r.data))
+      .catch(() => {});
+  }, []);
+  
 
   if (loading) return <Layout title="Analytics"><Spinner /></Layout>
   if (!data)   return <Layout title="Analytics"><div style={{ color:T.tx3, textAlign:'center', padding:40 }}>No data</div></Layout>
@@ -473,11 +511,11 @@ export function AdminAnalytics() {
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
-        <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>📊 By Status</div>
+        <Card style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>By Status</div>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
-              <Pie data={statusData} cx="50%" cy="50%" outerRadius={80} dataKey="value"
+              <Pie data={statusData} cx="50%" cy="50%" outerRadius={95} dataKey="value"
                 label={({name,percent}) => percent>0.05?`${(percent*100).toFixed(0)}%`:''} labelLine={false}>
                 {statusData.map((_,i) => <Cell key={i} fill={COLORS[i%COLORS.length]} />)}
               </Pie>
@@ -494,8 +532,8 @@ export function AdminAnalytics() {
           </div>
         </Card>
 
-        <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>⚡ By Priority</div>
+        <Card style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>By Priority</div>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie data={priorityData} cx="50%" cy="50%" outerRadius={80} dataKey="value"
@@ -516,48 +554,10 @@ export function AdminAnalytics() {
         </Card>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:16, marginBottom:16 }}>
-        <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>📈 Monthly Trend</div>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={monthly} margin={{ top:5, right:20, bottom:5, left:0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a3a5c" />
-              <XAxis dataKey="month" tick={{ fill:T.tx3, fontSize:11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill:T.tx3, fontSize:11 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background:'#1a2540', border:'1px solid #2a3a5c', borderRadius:8, fontSize:12 }} />
-              <Line type="monotone" dataKey="Complaints" stroke={T.pri} strokeWidth={2} dot={{ fill:T.pri, r:4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        {ratingDist.length > 0 && (
-          <Card>
-            <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>⭐ Rating Distribution</div>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={ratingDist} layout="vertical" margin={{ top:0, right:10, bottom:0, left:0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a3a5c" horizontal={false} />
-                <XAxis type="number" tick={{ fill:T.tx3, fontSize:10 }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="stars" tick={{ fill:T.tx3, fontSize:11 }} axisLine={false} tickLine={false} width={30} />
-                <Tooltip contentStyle={{ background:'#1a2540', border:'1px solid #2a3a5c', borderRadius:8, fontSize:12 }} />
-                <Bar dataKey="Count" fill="#fbbf24" radius={[0,4,4,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            <div style={{ textAlign:'center', marginTop:10 }}>
-              <div style={{ fontSize:28, fontWeight:800, color:'#fbbf24' }}>{(data.feedback?.avg_rating||0).toFixed(1)}</div>
-              <div style={{ fontSize:12, color:T.tx3 }}>Average Rating ({data.feedback?.total || 0} reviews)</div>
-            </div>
-          </Card>
-        )}
-      </div>
 
       {deptData.length > 0 && (
-        <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>🏢 Complaints by Department</div>
-          <Card>
-            <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>
-              Complaints by Department
-            </div>
-
+        <Card style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ fontSize:14, fontWeight:700, marginBottom:14 }}>Complaints by Department</div>
             <table style={{ width:'100%', borderCollapse:'collapse' }}>
               <thead>
                 <tr>
@@ -572,9 +572,14 @@ export function AdminAnalytics() {
                   .sort((a,b) => b.Complaints - a.Complaints)
                   .map((dept,index) => (
                     <tr key={index}>
-                      <td style={{ padding:'10px' }}>{index + 1}</td>
+                      <td style={{ padding:'10px' }}>{
+                        index===0 ? "🥇" :
+                        index===1 ? "🥈" :
+                        index===2 ? "🥉" :
+                        index+1
+                        }</td>
                       <td style={{ padding:'10px' }}>{dept.name}</td>
-                      <td style={{ padding:'10px', textAlign:'center', fontWeight:'bold' }}>
+                      <td style={{ padding:'10px', textAlign:'center', fontWeight:800,fontSize:16,color:T.pri }}>
                         {dept.Complaints}
                       </td>
                     </tr>
@@ -582,8 +587,68 @@ export function AdminAnalytics() {
               </tbody>
             </table>
           </Card>
-        </Card>
       )}
+      <Card style={{ marginTop: 20 }}>
+
+      <div
+          style={{
+              fontSize:16,
+              fontWeight:700,
+              marginBottom:16
+          }}
+      >
+          📜 Recent System Activity
+      </div>
+      <table
+          style={{
+              width: "100%",
+              borderCollapse: "collapse",
+          }}
+      >
+          <thead>
+              <tr
+                  style={{
+                      borderBottom: "1px solid var(--border)",
+                  }}
+              >
+                  <th style={{ textAlign: "left", padding: "12px" }}>
+                      Time
+                  </th>
+
+                  <th style={{ textAlign: "left", padding: "12px" }}>
+                      User
+                  </th>
+
+                  <th style={{ textAlign: "left", padding: "12px" }}>
+                      Activity
+                  </th>
+              </tr>
+          </thead>
+
+          <tbody>
+              {activity.map((log, index) => (
+                  <tr
+                      key={index}
+                      style={{
+                          borderBottom: "1px solid var(--border)",
+                      }}
+                  >
+                      <td style={{ padding: "12px" }}>
+                          {log.time}
+                      </td>
+
+                      <td style={{ padding: "12px" }}>
+                          {log.user}
+                      </td>
+
+                      <td style={{ padding: "12px" }}>
+                          {log.action}
+                      </td>
+                  </tr>
+              ))}
+          </tbody>
+      </table>
+      </Card>
     </Layout>
   )
 }

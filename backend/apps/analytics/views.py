@@ -10,6 +10,8 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from apps.complaints.models import Complaint, Feedback
+from rest_framework.views import APIView
+from django.contrib.auth import get_user_model
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -133,18 +135,33 @@ def department_analytics(request):
         )
         avg_resolution_hours = round(total_hours / resolved_with_times.count(), 1)
 
+    by_status = list(
+        c_qs.values("status")
+            .annotate(count=Count("id"))
+            .order_by("status")
+    )
+
     return Response({
-        'department': dept.name,
-        'total':      c_qs.count(),
-        'resolved':   c_qs.filter(status='resolved').count(),
-        'pending':    c_qs.filter(status='pending').count(),
-        'in_progress': c_qs.filter(status='in_progress').count(),
-        'avg_rating': round(
-            Feedback.objects.filter(complaint__department=dept).aggregate(avg=Avg('rating'))['avg'] or 0, 2
+        "department": dept.name,
+        "total": c_qs.count(),
+        "resolved": c_qs.filter(status="resolved").count(),
+        "pending": c_qs.filter(status="pending").count(),
+        "in_progress": c_qs.filter(status="in_progress").count(),
+
+        "by_status": by_status,   # <-- ADD THIS
+
+        "avg_rating": round(
+            Feedback.objects.filter(
+                complaint__department=dept
+            ).aggregate(avg=Avg("rating"))["avg"] or 0,
+            2,
         ),
-        'weekly_trend':          weekly,
-        'avg_resolution_hours':  avg_resolution_hours,
-        'by_priority': list(c_qs.values('priority').annotate(count=Count('id'))),
+
+        "weekly_trend": weekly,
+        "avg_resolution_hours": avg_resolution_hours,
+        "by_priority": list(
+            c_qs.values("priority").annotate(count=Count("id"))
+        ),
     })
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -237,3 +254,48 @@ def export_workers_pdf(request):
     doc.build(content)
 
     return response
+from rest_framework.views import APIView
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+class RecentActivityAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        activities = []
+
+        complaints = Complaint.objects.select_related(
+            "user"
+        ).order_by("-created_at")[:5]
+
+        for complaint in complaints:
+            activities.append({
+                "time": complaint.created_at,
+                "user": complaint.user.name,
+                "action": f"Submitted complaint '{complaint.title}'"
+            })
+
+        users = User.objects.order_by("-date_joined")[:5]
+
+        for user in users:
+            activities.append({
+                "time": user.date_joined,
+                "user": user.name,
+                "action": "Registered account"
+            })
+
+        activities.sort(
+            key=lambda x: x["time"],
+            reverse=True
+        )
+
+        for activity in activities:
+            activity["time"] = timezone.localtime(
+                activity["time"]
+            ).strftime("%d %b %I:%M %p")
+
+        return Response(activities[:10])

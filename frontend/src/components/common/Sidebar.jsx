@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FiLogOut, FiMoon, FiSun } from "react-icons/fi";
-
+import { RiLogoutBoxRLine } from "react-icons/ri";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { notifAPI } from "../../services/api";
@@ -15,7 +15,7 @@ const NAV_LINKS = {
   ],
 
   department_admin: [
-    { to: "/department", label: "Dashboard", icon: "📊" },
+    { to: "/department", label: "Dashboard", icon: "🏠" },
     { to: "/department/complaints", label: "Complaints", icon: "📋" },
     { to: "/department/workers", label: "Workers", icon: "👷" },
     { to: "/department/map", label: "Map", icon: "🗺️" },
@@ -23,13 +23,13 @@ const NAV_LINKS = {
   ],
 
   worker: [
-    { to: "/department", label: "Dashboard", icon: "📊" },
+    { to: "/department", label: "Dashboard", icon: "🏠" },
     { to: "/department/complaints", label: "Assigned", icon: "🛠️" },
     { to: "/worker/performance", label: "Performance", icon: "⭐" },
   ],
 
   admin: [
-    { to: "/admin", label: "Dashboard", icon: "📊" },
+    { to: "/admin", label: "Dashboard", icon: "🏠" },
     { to: "/admin/users", label: "Users", icon: "👥" },
     { to: "/admin/departments", label: "Departments", icon: "🏢" },
     { to: "/admin/complaints", label: "Complaints", icon: "📋" },
@@ -232,143 +232,92 @@ borderTop:"1px solid rgba(255,255,255,.08)"
 >
 
 <div
-style={{
-display:"flex",
-alignItems:"center",
-gap:12,
-marginBottom:16
-}}
+  onClick={() => navigate("/profile")}
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+    cursor: "pointer",
+    padding: "10px",
+    borderRadius: 12,
+    transition: "0.2s",
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.background = "rgba(255,255,255,.08)";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.background = "transparent";
+  }}
 >
+  <div
+    style={{
+      width: 44,
+      height: 44,
+      borderRadius: "50%",
+      background: "linear-gradient(135deg,#0D6EFD,#5B5BD6)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontWeight: 700,
+      fontSize: 16,
+    }}
+  >
+    {user?.name?.[0]?.toUpperCase() || "U"}
+  </div>
 
-<div
-style={{
-width:44,
-height:44,
-borderRadius:"50%",
-background:"linear-gradient(135deg,#0D6EFD,#5B5BD6)",
-display:"flex",
-alignItems:"center",
-justifyContent:"center",
-fontWeight:700,
-fontSize:16
-}}
->
+  <div>
+    <div
+      style={{
+        fontWeight: 700,
+        fontSize: 14,
+      }}
+    >
+      {user?.name?.split(" ").slice(0, 2).join(" ")}
+    </div>
 
-{user?.name?.[0]?.toUpperCase() || "U"}
-
+    <div
+      style={{
+        fontSize: 11,
+        opacity: 0.7,
+        textTransform: "capitalize",
+      }}
+    >
+      {user?.role?.replace("_", " ").toUpperCase()}
+    </div>
+  </div>
 </div>
 
-<div>
-
-<div
-style={{
-fontWeight:700,
-fontSize:14
-}}
->
-
-{user?.name?.split(" ").slice(0,2).join(" ")}
-
-</div>
-
-<div
-style={{
-fontSize:11,
-opacity:.7,
-textTransform:"capitalize"
-}}
->
-
-{user?.role?.replace("_"," ").toUpperCase()}
-
-</div>
-
-</div>
-
-</div>
 
 <button
-
-onClick={toggleTheme}
-
-style={{
-
-width:"100%",
-
-padding:"10px",
-
-marginBottom:10,
-
-border:"none",
-
-borderRadius:10,
-
-background:"rgba(255,255,255,.08)",
-
-color:"#fff",
-
-cursor:"pointer",
-
-fontWeight:600
-
-}}
-
+  onClick={async () => {
+    await logout();
+    navigate("/login");
+  }}
+  style={{
+    width: "100%",
+    background: "transparent",
+    border: "none",
+    borderRadius: "12px",
+    padding: "14px 18px",
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    cursor: "pointer",
+    color: "#EF4444",
+    fontSize: "15px",
+    fontWeight: "600",
+    transition: "all 0.25s ease",
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.background = "rgba(239,68,68,0.12)";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.background = "transparent";
+  }}
 >
-
-{theme==="dark"
-
-? <><FiSun/> Light Mode</>
-
-: <><FiMoon/> Dark Mode</>
-
-}
-
-</button>
-
-<button
-
-onClick={async()=>{
-
-await logout();
-
-navigate("/login");
-
-}}
-
-style={{
-
-width:"100%",
-
-padding:"10px",
-
-border:"none",
-
-borderRadius:10,
-
-background:"#DC2626",
-
-color:"#fff",
-
-cursor:"pointer",
-
-display:"flex",
-
-justifyContent:"center",
-
-alignItems:"center",
-
-gap:8,
-
-fontWeight:600
-
-}}
-
->
-
-<FiLogOut/>
-
-Logout
-
+  <RiLogoutBoxRLine size={20} />
+  <span>Logout</span>
 </button>
 
 </div>

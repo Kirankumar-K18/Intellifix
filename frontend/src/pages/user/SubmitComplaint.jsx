@@ -268,10 +268,18 @@ export default function SubmitComplaint() {
   }
 
   const handleSubmit = async e => {
-    e.preventDefault()
-    const errs = validate()
-    if (Object.keys(errs).length) { setErrors(errs); return }
-    setLoading(true)
+    e.preventDefault();
+
+    if (loading) return;
+
+    const errs = validate();
+
+    if (Object.keys(errs).length) {
+        setErrors(errs);
+        return;
+    }
+
+    setLoading(true);
     try {
       const fd = new FormData()
       Object.entries(form).forEach(([k, v]) => { if (v !== '' && v !== null && v !== undefined) fd.append(k, v) })
@@ -436,7 +444,13 @@ export default function SubmitComplaint() {
 
             <div style={{ display:'flex', gap:10 }}>
               <Button type="button" variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
-              <Button type="submit" loading={loading} style={{ flex:1, justifyContent:'center' }}>🚀 Submit Complaint</Button>
+              <Button
+                  type="submit"
+                  loading={loading}
+                  disabled={loading}
+              >
+                  {loading ? "Submitting..." : "Submit Complaint"}
+              </Button>
             </div>
           </form>
         </Card>

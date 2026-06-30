@@ -42,7 +42,15 @@ export function MyComplaints() {
   return (
     <Layout title="My Complaints" action={<Link to="/user/submit"><Button>+ New Complaint</Button></Link>}>
       {/* Filters */}
-      <div style={{ display:'flex', gap:10, marginBottom:16, flexWrap:'wrap' }}>
+      <div
+          style={{
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1fr",
+              gap: "16px",
+              marginBottom: "20px",
+              alignItems: "center",
+          }}
+      >
         <input value={search} onChange={e => setS(e.target.value)} placeholder="🔍 Search..."
           style={{ background:T.bg3, border:`1px solid ${T.brd}`, borderRadius:9, padding:'8px 12px', color:T.tx, fontSize:13, fontFamily:'inherit', outline:'none', flex:1, minWidth:160 }} />
         <select value={statusF} onChange={e => setSF(e.target.value)}

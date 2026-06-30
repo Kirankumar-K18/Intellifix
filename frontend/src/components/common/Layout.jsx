@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FiArrowLeft } from "react-icons/fi";
-
+import { FiMoon, FiSun } from "react-icons/fi";
 import { Sidebar } from "./Sidebar";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -167,30 +167,33 @@ gap:12
 onClick={toggleTheme}
 
 style={{
+  width: "40px",
+  height: "40px",
+  borderRadius: "14px",
+  border: "1px solid var(--border)",
+  background: "transparent",
+  color: "var(--text-primary)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  transition: "all 0.25s ease",
+}}
+onMouseEnter={(e) => {
+  e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+}}
 
-border:"none",
-
-background:"rgba(255,255,255,.12)",
-
-padding:"8px 14px",
-
-borderRadius:10,
-
-cursor:"pointer",
-
-color:"#fff",
-
-fontWeight:600
-
+onMouseLeave={(e) => {
+  e.currentTarget.style.background = "transparent";
 }}
 
 >
 
 {theme==="dark"
 
-?"☀ Light"
+?"☀ "
 
-:"🌙 Dark"
+:"🌙 "
 
 }
 

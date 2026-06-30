@@ -45,14 +45,14 @@ export default function DeptAnalytics() {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:22 }}>
         <StatCard label="Total"       value={data.total       ?? 0} icon="📋" color={T.pri} />
         <StatCard label="Resolved"    value={data.resolved    ?? 0} icon="✅" color={T.ok} />
-        <StatCard label="Avg Rating"  value={`${(data.avg_rating ?? 0).toFixed(1)}★`} icon="⭐" color='#fbbf24' />
+        <StatCard label="Avg Rating"  value={`${(data.avg_rating ?? 0).toFixed(1)}`} icon="⭐" color='#fbbf24' />
         <StatCard label="Avg Resolve" value={data.avg_resolution_hours ? `${data.avg_resolution_hours}h` : '—'} icon="⏱️" color={T.acc ?? T.pri} />
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
         {/* By Status Pie */}
         <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:16 }}>📊 Complaints by Status</div>
+          <div style={{ fontSize:14, fontWeight:700, marginBottom:16 }}> Complaints by Status</div>
           {statusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
@@ -75,7 +75,7 @@ export default function DeptAnalytics() {
 
         {/* By Priority Pie */}
         <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:16 }}>⚡ Complaints by Priority</div>
+          <div style={{ fontSize:14, fontWeight:700, marginBottom:16 }}>Complaints by Priority</div>
           {priorityData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
@@ -106,7 +106,7 @@ export default function DeptAnalytics() {
       {/* Weekly Trend */}
       {weeklyData.length > 0 && (
         <Card>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:16 }}>📈 Weekly Trend (Last 8 Weeks)</div>
+          <div style={{ fontSize:14, fontWeight:700, marginBottom:16 }}>Weekly Trend (Last 8 Weeks)</div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={weeklyData} margin={{ top:5, right:20, bottom:5, left:0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a3a5c" />

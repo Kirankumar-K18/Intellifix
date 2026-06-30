@@ -37,7 +37,15 @@ export default function DeptComplaints() {
     <Layout title="Complaints Queue" action={
       <div style={{ fontSize:11, color:T.tx3 }}>Sorted by AI priority score ↓</div>
     }>
-      <div style={{ display:'flex', gap:10, marginBottom:16, flexWrap:'wrap' }}>
+      <div
+          style={{
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1fr",
+              gap: "16px",
+              marginBottom: "20px",
+              alignItems: "center",
+          }}
+      >
         <input value={search} onChange={e => setS(e.target.value)} placeholder="🔍 Search complaints..."
           style={{ background:T.bg3, border:`1px solid ${T.brd}`, borderRadius:9, padding:'8px 12px', color:T.tx, fontSize:13, fontFamily:'inherit', outline:'none', flex:1, minWidth:160 }} />
         <select value={statusF} onChange={e => setSF(e.target.value)}
@@ -261,13 +269,24 @@ export function DeptComplaintDetail() {
             <img
               src={c.image_url}
               alt="Evidence"
+              onClick={() => window.open(c.image_url, "_blank")}
               style={{
-                width:'100%',
-                maxHeight:300,
-                objectFit:'cover',
-                borderRadius:9
+                width: "100%",
+                maxHeight: "500px",
+                objectFit: "contain",
+                borderRadius: 9,
+                background: "#f5f5f5",
+                cursor: "zoom-in",
               }}
             />
+            <div style={{ marginTop: 12 }}>
+              <Button
+                variant="outline"
+                onClick={() => window.open(c.image_url, "_blank")}
+              >
+                 View Full Image
+              </Button>
+            </div>
 
             <div
               style={{

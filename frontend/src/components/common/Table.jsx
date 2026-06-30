@@ -91,7 +91,7 @@ export function Table({
                       }}
                     >
                       {col.render
-                        ? col.render(row)
+                        ? col.render(row[col.key], row)
                         : row[col.key]}
                     </td>
                   ))}

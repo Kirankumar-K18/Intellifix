@@ -89,6 +89,8 @@ export const analyticsAPI = {
 
   department: (p='') =>
     api.get(`/analytics/department/?${p}`),
+  recentActivity: () =>
+    api.get("/analytics/recent-activity/"),
 
   exportWorkersPDF: () =>
     api.get('/analytics/export-workers-pdf/', {
