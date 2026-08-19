@@ -6,6 +6,7 @@ import LoginPage      from './pages/LoginPage'
 import RegisterPage   from './pages/RegisterPage'
 import NotFoundPage   from './pages/NotFoundPage'
 import Profile from "./pages/Profile";
+import HelpSupport from "./pages/HelpSupport";
 // User pages
 import UserDashboard  from './pages/user/Dashboard'
 import SubmitComplaint from './pages/user/SubmitComplaint'
@@ -68,6 +69,14 @@ export default function App() {
                     <Profile/>
                 </PrivateRoute>
             }
+        />
+        <Route
+          path="/help"
+          element={
+            <PrivateRoute>
+              <HelpSupport />
+            </PrivateRoute>
+          }
         />
 
         {/* Citizen */}

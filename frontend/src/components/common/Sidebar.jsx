@@ -12,6 +12,7 @@ const NAV_LINKS = {
     { to: "/user", label: "Dashboard", icon: "🏠" },
     { to: "/user/submit", label: "Submit Complaint", icon: "➕" },
     { to: "/user/complaints", label: "My Complaints", icon: "📋" },
+    { to: "/help", label: "Help & Support", icon: "❓" },
   ],
 
   department_admin: [
@@ -20,12 +21,14 @@ const NAV_LINKS = {
     { to: "/department/workers", label: "Workers", icon: "👷" },
     { to: "/department/map", label: "Map", icon: "🗺️" },
     { to: "/department/analytics", label: "Analytics", icon: "📈" },
+    { to: "/help", label: "Help & Support", icon: "❓" },
   ],
 
   worker: [
     { to: "/department", label: "Dashboard", icon: "🏠" },
     { to: "/department/complaints", label: "Assigned", icon: "🛠️" },
     { to: "/worker/performance", label: "Performance", icon: "⭐" },
+    { to: "/help", label: "Help & Support", icon: "❓" },
   ],
 
   admin: [
