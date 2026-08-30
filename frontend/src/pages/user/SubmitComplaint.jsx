@@ -2,17 +2,24 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { deptAPI, chatbotAPI, complaintAPI } from '../../services/api'
-import { Layout, Card, Button, Input, Textarea, Modal, Spinner } from '../../components/common/UI'
+import {
+  Layout,
+  Card,
+  Button,
+  Input,
+  Textarea,
+  Modal,
+  Spinner
+} from '../../components/common/UI'
 import toast from 'react-hot-toast'
 import { T } from '../../styles/theme'
 
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   CAMERA CAPTURE COMPONENT
-───────────────────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   Camera Capture Component
+───────────────────────────────────────────────────────────── */
 
 function CameraCapture({ onCapture, onClose, username }) {
-
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
@@ -36,208 +43,141 @@ function CameraCapture({ onCapture, onClose, username }) {
 
 
   const stopStream = useCallback(() => {
-
     if (streamRef.current) {
-
-      streamRef.current
-        .getTracks()
-        .forEach(track => track.stop())
-
+      streamRef.current.getTracks().forEach(track => track.stop())
       streamRef.current = null
     }
-
   }, [])
 
 
-  const startCam = useCallback(async (f = 'environment') => {
+  const startCam = useCallback(
+    async (f = 'environment') => {
+      stopStream()
 
-    stopStream()
+      setPhase('loading')
+      setCamErr('')
 
-    setPhase('loading')
-    setCamErr('')
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCamErr('Camera API unavailable. Use HTTPS.')
+        setPhase('error')
+        return
+      }
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-
-      setCamErr('Camera API unavailable. Use HTTPS.')
-      setPhase('error')
-
-      return
-    }
-
-    try {
-
-      const stream =
-        await navigator.mediaDevices.getUserMedia({
-
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: f },
             width: { ideal: 1280 },
             height: { ideal: 720 }
           },
-
           audio: false
-
         })
 
-      streamRef.current = stream
+        streamRef.current = stream
+        setFacing(f)
 
-      setFacing(f)
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          videoRef.current.play().catch(() => {})
+        }
 
-      if (videoRef.current) {
+        setPhase('live')
+      } catch (err) {
+        const msgs = {
+          NotAllowedError: 'Camera permission denied.',
+          NotFoundError: 'No camera found.',
+          NotReadableError: 'Camera in use by another app.'
+        }
 
-        videoRef.current.srcObject = stream
-
-        videoRef.current
-          .play()
-          .catch(() => {})
+        setCamErr(msgs[err.name] || `Camera error: ${err.message}`)
+        setPhase('error')
       }
-
-      setPhase('live')
-
-    } catch (err) {
-
-      const msgs = {
-
-        NotAllowedError:
-          'Camera permission denied.',
-
-        NotFoundError:
-          'No camera found.',
-
-        NotReadableError:
-          'Camera in use by another app.'
-
-      }
-
-      setCamErr(
-        msgs[err.name] ||
-        `Camera error: ${err.message}`
-      )
-
-      setPhase('error')
-    }
-
-  }, [stopStream])
+    },
+    [stopStream]
+  )
 
 
-  const fetchGPS = useCallback(() => {
-
-    return new Promise(resolve => {
-
-      if (!navigator.geolocation) {
-
-        resolve({
-          lat: null,
-          lng: null,
-          acc: null,
-          err: 'Geolocation not supported.'
-        })
-
-        return
-      }
-
-      navigator.geolocation.getCurrentPosition(
-
-        p => {
-
+  const fetchGPS = useCallback(
+    () =>
+      new Promise(resolve => {
+        if (!navigator.geolocation) {
           resolve({
-
-            lat:
-              parseFloat(
-                p.coords.latitude.toFixed(6)
-              ),
-
-            lng:
-              parseFloat(
-                p.coords.longitude.toFixed(6)
-              ),
-
-            acc:
-              Math.round(
-                p.coords.accuracy
-              ),
-
-            err: null
-
-          })
-
-        },
-
-        e => {
-
-          resolve({
-
             lat: null,
             lng: null,
             acc: null,
-
-            err:
-              [
-                '',
-                'Location denied.',
-                'Unavailable.',
-                'Timed out.'
-              ][e.code] ||
-              'GPS error.'
-
+            err: 'Geolocation not supported.'
           })
-
-        },
-
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+          return
         }
 
-      )
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            resolve({
+              lat: parseFloat(
+                position.coords.latitude.toFixed(6)
+              ),
+              lng: parseFloat(
+                position.coords.longitude.toFixed(6)
+              ),
+              acc: Math.round(position.coords.accuracy),
+              err: null
+            })
+          },
+          error => {
+            resolve({
+              lat: null,
+              lng: null,
+              acc: null,
+              err:
+                ['', 'Location denied.', 'Unavailable.', 'Timed out.'][
+                  error.code
+                ] || 'GPS error.'
+            })
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          }
+        )
+      }),
+    []
+  )
 
-    })
 
-  }, [])
+  const buildFilename = useCallback(
+    iso => {
+      const d = new Date(iso)
 
+      const pad = n => String(n).padStart(2, '0')
 
-  const buildFilename = useCallback((iso) => {
+      const date =
+        `${d.getFullYear()}` +
+        `${pad(d.getMonth() + 1)}` +
+        `${pad(d.getDate())}`
 
-    const d = new Date(iso)
+      const time =
+        `${pad(d.getHours())}` +
+        `${pad(d.getMinutes())}` +
+        `${pad(d.getSeconds())}`
 
-    const p = n =>
-      String(n).padStart(2, '0')
+      const safe =
+        (username || 'user')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .slice(0, 20) || 'user'
 
-    const date =
-      `${d.getFullYear()}${p(
-        d.getMonth() + 1
-      )}${p(d.getDate())}`
-
-    const time =
-      `${p(d.getHours())}${p(
-        d.getMinutes()
-      )}${p(d.getSeconds())}`
-
-    const safe =
-      (username || 'user')
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
-        .slice(0, 20) ||
-      'user'
-
-    return `${safe}_${date}_${time}.jpg`
-
-  }, [username])
+      return `${safe}_${date}_${time}.jpg`
+    },
+    [username]
+  )
 
 
   const capture = useCallback(() => {
-
     const video = videoRef.current
     const canvas = canvasRef.current
 
-    if (
-      !video ||
-      !canvas ||
-      capturing
-    ) {
-      return
-    }
+    if (!video || !canvas || capturing) return
 
     if (
       video.readyState < 2 ||
@@ -248,27 +188,16 @@ function CameraCapture({ onCapture, onClose, username }) {
 
     setCapturing(true)
 
-    const ts =
-      new Date().toISOString()
-
+    const ts = new Date().toISOString()
     setTs(ts)
 
-    canvas.width =
-      video.videoWidth
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
 
-    canvas.height =
-      video.videoHeight
-
-    const ctx =
-      canvas.getContext('2d')
+    const ctx = canvas.getContext('2d')
 
     if (facing === 'user') {
-
-      ctx.translate(
-        canvas.width,
-        0
-      )
-
+      ctx.translate(canvas.width, 0)
       ctx.scale(-1, 1)
     }
 
@@ -281,15 +210,7 @@ function CameraCapture({ onCapture, onClose, username }) {
     )
 
     if (facing === 'user') {
-
-      ctx.setTransform(
-        1,
-        0,
-        0,
-        1,
-        0,
-        0
-      )
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
 
     const label =
@@ -301,20 +222,16 @@ function CameraCapture({ onCapture, onClose, username }) {
         }
       )}`
 
-    const fs =
-      Math.max(
-        14,
-        Math.floor(canvas.width / 52)
-      )
+    const fs = Math.max(
+      14,
+      Math.floor(canvas.width / 52)
+    )
 
-    ctx.font =
-      `bold ${fs}px monospace`
+    ctx.font = `bold ${fs}px monospace`
 
-    const tw =
-      ctx.measureText(label).width
+    const tw = ctx.measureText(label).width
 
-    ctx.fillStyle =
-      'rgba(0,0,0,.6)'
+    ctx.fillStyle = 'rgba(0,0,0,.6)'
 
     ctx.fillRect(
       0,
@@ -332,19 +249,16 @@ function CameraCapture({ onCapture, onClose, username }) {
     )
 
     canvas.toBlob(
-
       blob => {
-
         if (!blob) {
-
           setCapturing(false)
           return
         }
 
-        const url =
+        setPreview(
           URL.createObjectURL(blob)
+        )
 
-        setPreview(url)
         setBlob(blob)
 
         stopStream()
@@ -355,19 +269,13 @@ function CameraCapture({ onCapture, onClose, username }) {
         setGpsLoading(true)
 
         fetchGPS().then(g => {
-
           setGps(g)
           setGpsLoading(false)
-
         })
-
       },
-
       'image/jpeg',
       0.90
-
     )
-
   }, [
     capturing,
     facing,
@@ -377,12 +285,8 @@ function CameraCapture({ onCapture, onClose, username }) {
 
 
   const retake = useCallback(() => {
-
     if (previewUrl) {
-
-      URL.revokeObjectURL(
-        previewUrl
-      )
+      URL.revokeObjectURL(previewUrl)
     }
 
     setPreview(null)
@@ -398,7 +302,6 @@ function CameraCapture({ onCapture, onClose, username }) {
     setTs(null)
 
     startCam(facing)
-
   }, [
     previewUrl,
     facing,
@@ -407,32 +310,18 @@ function CameraCapture({ onCapture, onClose, username }) {
 
 
   const confirm = useCallback(() => {
-
-    if (!capturedBlob) {
-      return
-    }
+    if (!capturedBlob) return
 
     onCapture({
-
       blob: capturedBlob,
-
-      filename:
-        buildFilename(
-          capturedTs
-        ),
-
+      filename: buildFilename(capturedTs),
       previewUrl,
-
       latitude: gps.lat,
-
       longitude: gps.lng,
-
       timestamp: capturedTs
-
     })
 
     onClose()
-
   }, [
     capturedBlob,
     capturedTs,
@@ -445,118 +334,96 @@ function CameraCapture({ onCapture, onClose, username }) {
 
 
   useEffect(() => {
-
     startCam('environment')
 
     return () => {
-
       stopStream()
 
       if (previewUrl) {
-
-        URL.revokeObjectURL(
-          previewUrl
-        )
+        URL.revokeObjectURL(previewUrl)
       }
-
     }
-
   }, [])
 
 
-  const S = {
-
-    vp: {
-      position: 'relative',
-      background: '#000',
-      aspectRatio: '4/3',
-      overflow: 'hidden'
-    },
-
-    st: {
-      position: 'absolute',
-      inset: 0,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 10,
-      color: '#94a3b8',
-      padding: 20
-    }
-
+  const videoPanelStyle = {
+    position: 'relative',
+    background: '#000',
+    aspectRatio: '4/3',
+    overflow: 'hidden'
   }
 
 
-  const cornerStyle = pos => {
+  const statusStyle = {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    color: '#94a3b8',
+    padding: 20
+  }
 
-    const s = {
 
+  const cornerStyle = position => {
+    const style = {
       position: 'absolute',
       width: 22,
       height: 22,
       borderColor: '#3b82f6',
       borderStyle: 'solid',
-      opacity: .85
-
+      opacity: 0.85
     }
 
-    if (pos === 'tl') {
-
+    if (position === 'tl') {
       return {
-        ...s,
+        ...style,
         top: 14,
         left: 14,
         borderWidth: '2px 0 0 2px',
         borderRadius: '4px 0 0 0'
       }
-
     }
 
-    if (pos === 'tr') {
-
+    if (position === 'tr') {
       return {
-        ...s,
+        ...style,
         top: 14,
         right: 14,
         borderWidth: '2px 2px 0 0',
         borderRadius: '0 4px 0 0'
       }
-
     }
 
-    if (pos === 'bl') {
-
+    if (position === 'bl') {
       return {
-        ...s,
+        ...style,
         bottom: 14,
         left: 14,
         borderWidth: '0 0 2px 2px',
         borderRadius: '0 0 0 4px'
       }
-
     }
 
     return {
-
-      ...s,
+      ...style,
       bottom: 14,
       right: 14,
       borderWidth: '0 2px 2px 0',
       borderRadius: '0 0 4px 0'
-
     }
-
   }
 
 
   return (
-
     <div
-      onClick={e =>
-        e.target === e.currentTarget &&
-        onClose()
-      }
+      onClick={e => {
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -568,7 +435,6 @@ function CameraCapture({ onCapture, onClose, username }) {
         padding: 16
       }}
     >
-
       <div
         style={{
           background: '#0f1626',
@@ -580,6 +446,8 @@ function CameraCapture({ onCapture, onClose, username }) {
         }}
       >
 
+        {/* Header */}
+
         <div
           style={{
             display: 'flex',
@@ -589,7 +457,6 @@ function CameraCapture({ onCapture, onClose, username }) {
             borderBottom: '1px solid #2a3a5c'
           }}
         >
-
           <div
             style={{
               fontSize: 15,
@@ -611,11 +478,12 @@ function CameraCapture({ onCapture, onClose, username }) {
           >
             ✕
           </button>
-
         </div>
 
 
-        <div style={S.vp}>
+        {/* Camera */}
+
+        <div style={videoPanelStyle}>
 
           <video
             ref={videoRef}
@@ -644,15 +512,11 @@ function CameraCapture({ onCapture, onClose, username }) {
 
           <canvas
             ref={canvasRef}
-            style={{
-              display: 'none'
-            }}
+            style={{ display: 'none' }}
           />
-
 
           {phase === 'preview' &&
             previewUrl && (
-
               <img
                 src={previewUrl}
                 alt="Captured"
@@ -664,14 +528,10 @@ function CameraCapture({ onCapture, onClose, username }) {
                   objectFit: 'cover'
                 }}
               />
-
             )}
 
-
           {phase === 'loading' && (
-
-            <div style={S.st}>
-
+            <div style={statusStyle}>
               <div
                 style={{
                   width: 36,
@@ -684,28 +544,16 @@ function CameraCapture({ onCapture, onClose, username }) {
                 }}
               />
 
-              <div
-                style={{
-                  fontSize: 13
-                }}
-              >
+              <div style={{ fontSize: 13 }}>
                 Starting camera…
               </div>
-
             </div>
-
           )}
 
-
           {phase === 'error' && (
+            <div style={statusStyle}>
 
-            <div style={S.st}>
-
-              <div
-                style={{
-                  fontSize: 36
-                }}
-              >
+              <div style={{ fontSize: 36 }}>
                 📵
               </div>
 
@@ -720,9 +568,7 @@ function CameraCapture({ onCapture, onClose, username }) {
               </div>
 
               <button
-                onClick={() =>
-                  startCam(facing)
-                }
+                onClick={() => startCam(facing)}
                 style={{
                   marginTop: 10,
                   padding: '8px 18px',
@@ -738,28 +584,18 @@ function CameraCapture({ onCapture, onClose, username }) {
               </button>
 
             </div>
-
           )}
 
-
           {phase === 'live' && (
-
             <>
-
-              {[
-                'tl',
-                'tr',
-                'bl',
-                'br'
-              ].map(p => (
-
-                <div
-                  key={p}
-                  style={cornerStyle(p)}
-                />
-
-              ))}
-
+              {['tl', 'tr', 'bl', 'br'].map(
+                position => (
+                  <div
+                    key={position}
+                    style={cornerStyle(position)}
+                  />
+                )
+              )}
 
               <div
                 style={{
@@ -776,19 +612,15 @@ function CameraCapture({ onCapture, onClose, username }) {
                 }}
               />
 
-
               <button
                 onClick={() => {
-
                   stopStream()
 
                   startCam(
-                    facing ===
-                      'environment'
+                    facing === 'environment'
                       ? 'user'
                       : 'environment'
                   )
-
                 }}
                 style={{
                   position: 'absolute',
@@ -811,14 +643,10 @@ function CameraCapture({ onCapture, onClose, username }) {
               >
                 🔄
               </button>
-
             </>
-
           )}
 
-
           {phase === 'preview' && (
-
             <div
               style={{
                 position: 'absolute',
@@ -835,14 +663,14 @@ function CameraCapture({ onCapture, onClose, username }) {
             >
               ✅ CAPTURED
             </div>
-
           )}
 
         </div>
 
 
-        {phase !== 'error' && (
+        {/* Camera buttons */}
 
+        {phase !== 'error' && (
           <div
             style={{
               padding: '14px 18px',
@@ -854,7 +682,6 @@ function CameraCapture({ onCapture, onClose, username }) {
           >
 
             {phase === 'live' && (
-
               <button
                 onClick={capture}
                 disabled={capturing}
@@ -879,21 +706,18 @@ function CameraCapture({ onCapture, onClose, username }) {
                   outline: 'none'
                 }}
               />
-
             )}
 
-
             {phase === 'preview' && (
-
               <>
-
                 <button
                   onClick={retake}
                   style={{
                     padding: '9px 18px',
                     borderRadius: 9,
                     background: '#1a2540',
-                    border: '1px solid #2a3a5c',
+                    border:
+                      '1px solid #2a3a5c',
                     color: '#94a3b8',
                     cursor: 'pointer',
                     fontWeight: 600,
@@ -902,7 +726,6 @@ function CameraCapture({ onCapture, onClose, username }) {
                 >
                   🔄 Retake
                 </button>
-
 
                 <button
                   onClick={confirm}
@@ -920,18 +743,16 @@ function CameraCapture({ onCapture, onClose, username }) {
                 >
                   ✅ Use This Photo
                 </button>
-
               </>
-
             )}
 
           </div>
-
         )}
 
 
-        {phase === 'preview' && (
+        {/* Capture information */}
 
+        {phase === 'preview' && (
           <div
             style={{
               padding: '4px 18px 14px',
@@ -942,7 +763,6 @@ function CameraCapture({ onCapture, onClose, username }) {
           >
 
             {capturedTs && (
-
               <div
                 style={{
                   fontSize: 11,
@@ -954,14 +774,13 @@ function CameraCapture({ onCapture, onClose, username }) {
                 <span>🕐</span>
 
                 <span>
-
                   <strong
                     style={{
                       color: '#64748b'
                     }}
                   >
-                    Captured:
-                  </strong>{' '}
+                    Captured:{' '}
+                  </strong>
 
                   {new Date(
                     capturedTs
@@ -972,16 +791,11 @@ function CameraCapture({ onCapture, onClose, username }) {
                       timeStyle: 'medium'
                     }
                   )}
-
                 </span>
-
               </div>
-
             )}
 
-
             {capturedTs && (
-
               <div
                 style={{
                   fontSize: 10,
@@ -991,7 +805,6 @@ function CameraCapture({ onCapture, onClose, username }) {
                   gap: 7
                 }}
               >
-
                 <span>📄</span>
 
                 <span>
@@ -999,11 +812,8 @@ function CameraCapture({ onCapture, onClose, username }) {
                     capturedTs
                   )}
                 </span>
-
               </div>
-
             )}
-
 
             <div
               style={{
@@ -1014,11 +824,9 @@ function CameraCapture({ onCapture, onClose, username }) {
                 alignItems: 'center'
               }}
             >
-
               <span>📍</span>
 
               {gpsLoading ? (
-
                 <span
                   style={{
                     display: 'flex',
@@ -1027,7 +835,6 @@ function CameraCapture({ onCapture, onClose, username }) {
                     color: '#64748b'
                   }}
                 >
-
                   <span
                     style={{
                       width: 10,
@@ -1044,33 +851,30 @@ function CameraCapture({ onCapture, onClose, username }) {
                   />
 
                   Fetching GPS…
-
                 </span>
-
               ) : gps.lat ? (
-
                 <span>
-
                   <strong
                     style={{
                       color: '#64748b'
                     }}
                   >
-                    GPS:
-                  </strong>{' '}
+                    GPS:{' '}
+                  </strong>
 
                   {Math.abs(
                     gps.lat
                   ).toFixed(5)}
-                  °{gps.lat >= 0 ? 'N' : 'S'},{' '}
+                  °
+                  {gps.lat >= 0 ? 'N' : 'S'},{' '}
 
                   {Math.abs(
                     gps.lng
                   ).toFixed(5)}
-                  °{gps.lng >= 0 ? 'E' : 'W'}
+                  °
+                  {gps.lng >= 0 ? 'E' : 'W'}
 
                   {gps.acc && (
-
                     <span
                       style={{
                         color: '#64748b',
@@ -1079,13 +883,9 @@ function CameraCapture({ onCapture, onClose, username }) {
                     >
                       ±{gps.acc}m
                     </span>
-
                   )}
-
                 </span>
-
               ) : (
-
                 <span
                   style={{
                     color: '#f59e0b'
@@ -1093,27 +893,22 @@ function CameraCapture({ onCapture, onClose, username }) {
                 >
                   ⚠ {gps.err || 'GPS unavailable'}
                 </span>
-
               )}
 
             </div>
 
           </div>
-
         )}
 
       </div>
-
     </div>
-
   )
-
 }
 
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   MAIN SUBMIT COMPLAINT PAGE
-───────────────────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   Main Submit Complaint Page
+───────────────────────────────────────────────────────────── */
 
 export default function SubmitComplaint() {
 
@@ -1123,175 +918,117 @@ export default function SubmitComplaint() {
   const [depts, setDepts] = useState([])
 
   const [form, setForm] = useState({
-
     title: '',
     description: '',
     location: '',
     address: '',
-
     latitude: null,
     longitude: null,
-
     department: '',
-
     is_anonymous: false
-
   })
-
 
   const [photo, setPhoto] = useState(null)
 
-
   const [chatbot, setChatbot] = useState({
-
     open: false,
     loading: false,
     suggestions: []
-
   })
 
+  const [showCam, setShowCam] = useState(false)
 
-  const [showCam, setShowCam] =
+  const [loading, setLoading] = useState(false)
+
+  const [errors, setErrors] = useState({})
+
+
+  /* ─────────────────────────────────────────────
+     Existing Complaint State
+  ───────────────────────────────────────────── */
+
+  const [existingComplaints, setExistingComplaints] =
+    useState([])
+
+  const [checkingExisting, setCheckingExisting] =
     useState(false)
 
-
-  const [loading, setLoading] =
-    useState(false)
-
-
-  const [errors, setErrors] =
-    useState({})
+  const [selectedExistingComplaint, setSelectedExistingComplaint] =
+    useState(null)
 
 
-  /* ─────────────────────────────────────────────────────────────────────────
-     EXISTING COMPLAINT STATE
-  ───────────────────────────────────────────────────────────────────────── */
-
-  const [
-    existingModal,
-    setExistingModal
-  ] = useState({
-
-    open: false,
-    loading: false,
-    complaints: []
-
-  })
-
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     LOAD DEPARTMENTS
-  ───────────────────────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────
+     Load Departments
+  ───────────────────────────────────────────── */
 
   useEffect(() => {
-
     deptAPI
       .getAll()
-      .then(r =>
+      .then(response => {
         setDepts(
-          r.data.results ||
-          r.data
+          response.data.results ||
+          response.data
         )
-      )
+      })
       .catch(() => {})
-
   }, [])
 
 
   const set = (key, value) => {
-
-    setForm(prev => ({
-      ...prev,
+    setForm(previous => ({
+      ...previous,
       [key]: value
     }))
-
-    setErrors(prev => ({
-      ...prev,
-      [key]: undefined
-    }))
-
   }
 
 
-  /* ─────────────────────────────────────────────────────────────────────────
-     CURRENT LOCATION
-  ───────────────────────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────
+     Current Location
+  ───────────────────────────────────────────── */
 
   const useCurrentLocation = () => {
 
     if (!navigator.geolocation) {
-
       toast.error(
         'Geolocation not supported'
       )
-
       return
     }
-
-
-    toast.loading(
-      'Detecting your location...',
-      {
-        id: 'location'
-      }
-    )
-
 
     navigator.geolocation.getCurrentPosition(
 
       async ({ coords }) => {
 
-        const latitude =
-          coords.latitude
-
-        const longitude =
-          coords.longitude
-
-
         set(
           'latitude',
-          latitude
+          coords.latitude
         )
 
         set(
           'longitude',
-          longitude
+          coords.longitude
         )
-
 
         try {
 
-          const res =
-            await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-            )
-
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}`
+          )
 
           const data =
-            await res.json()
-
-
-          const address =
-            data.display_name || ''
-
+            await response.json()
 
           set(
             'address',
-            address
+            data.display_name
           )
 
-
-          if (
-            !form.location.trim()
-          ) {
-
+          if (!form.location.trim()) {
             set(
               'location',
-              address
+              data.display_name
             )
-
           }
-
 
         } catch {
 
@@ -1299,586 +1036,241 @@ export default function SubmitComplaint() {
             'location',
             'Current Location'
           )
-
         }
 
-
         toast.success(
-          'Location detected',
-          {
-            id: 'location'
-          }
+          'Location detected'
         )
-
       },
-
 
       () => {
-
         toast.error(
-          'Unable to fetch location',
-          {
-            id: 'location'
-          }
+          'Unable to fetch location'
         )
-
       },
 
-
       {
-
         enableHighAccuracy: true,
         timeout: 15000,
         maximumAge: 0
-
       }
-
     )
-
   }
 
 
-  /* ─────────────────────────────────────────────────────────────────────────
-     AI DEPARTMENT SUGGESTION
-  ───────────────────────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────
+     AI Department Suggestion
+  ───────────────────────────────────────────── */
 
   const openChatbot = async () => {
 
     if (
       form.description.length < 10
     ) {
-
       toast.error(
         'Enter at least 10 characters description first.'
       )
-
       return
     }
 
-
-    setChatbot(c => ({
-
-      ...c,
+    setChatbot(current => ({
+      ...current,
       open: true,
       loading: true,
       suggestions: []
-
     }))
-
 
     try {
 
       const { data } =
         await chatbotAPI.suggestDept({
-
           description:
             form.description
-
         })
 
-
-      setChatbot(c => ({
-
-        ...c,
+      setChatbot(current => ({
+        ...current,
         loading: false,
         suggestions:
           data.suggestions || []
-
       }))
 
     } catch {
 
-      setChatbot(c => ({
-
-        ...c,
+      setChatbot(current => ({
+        ...current,
         loading: false
-
       }))
-
 
       toast.error(
         'Chatbot unavailable. Please select department manually.'
       )
-
     }
-
   }
 
 
   const selectSuggestion = suggestion => {
 
-    if (
-      suggestion.department_id
-    ) {
-
+    if (suggestion.department_id) {
       set(
         'department',
         String(
           suggestion.department_id
         )
       )
-
     }
 
-
-    setChatbot(c => ({
-
-      ...c,
+    setChatbot(current => ({
+      ...current,
       open: false
-
     }))
-
 
     toast.success(
       `Department set to: ${suggestion.department}`
     )
-
   }
 
 
-  /* ─────────────────────────────────────────────────────────────────────────
-     VALIDATION
-  ───────────────────────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────
+     Validation
+  ───────────────────────────────────────────── */
 
   const validate = () => {
 
-    const e = {}
+    const validationErrors = {}
 
-    if (!form.title.trim()) {
-
-      e.title =
+    if (!form.title) {
+      validationErrors.title =
         'Title is required'
-
     }
 
-    if (!form.description.trim()) {
-
-      e.description =
+    if (!form.description) {
+      validationErrors.description =
         'Description is required'
-
     }
 
-    if (!form.location.trim()) {
-
-      e.location =
+    if (!form.location) {
+      validationErrors.location =
         'Location is required'
-
     }
 
     if (!form.department) {
-
-      e.department =
+      validationErrors.department =
         'Please select a department'
-
     }
 
-    return e
-
+    return validationErrors
   }
 
 
-  /* ─────────────────────────────────────────────────────────────────────────
-     CREATE COMPLAINT
-  ───────────────────────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────
+     Submit Complaint
+  ───────────────────────────────────────────── */
 
-  const createComplaint = async () => {
+  const handleSubmit = async event => {
 
-    const fd = new FormData()
+    event.preventDefault()
 
+    if (loading) return
 
-    Object.entries(form).forEach(
-      ([key, value]) => {
-
-        if (
-          value !== '' &&
-          value !== null &&
-          value !== undefined
-        ) {
-
-          fd.append(
-            key,
-            value
-          )
-
-        }
-
-      }
-    )
-
-
-    if (photo?.blob) {
-
-      fd.append(
-        'image',
-        photo.blob,
-        photo.filename ||
-        'photo.jpg'
-      )
-
-    }
-
-
-    /*
-     * IMPORTANT:
-     * Form coordinates are the coordinates
-     * that should be submitted.
-     *
-     * Camera GPS is used only if form GPS
-     * is not already available.
-     */
-
-    if (
-      form.latitude === null &&
-      photo?.latitude
-    ) {
-
-      fd.append(
-        'latitude',
-        photo.latitude
-      )
-
-      fd.append(
-        'longitude',
-        photo.longitude
-      )
-
-    }
-
-
-    await complaintAPI.create(fd)
-
-  }
-
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     CHECK EXISTING COMPLAINTS
-  ───────────────────────────────────────────────────────────────────────── */
-
-  const checkForExistingComplaint =
-    async () => {
-
-      /*
-       * Existing complaint detection requires
-       * coordinates.
-       *
-       * If the user has not provided GPS,
-       * simply create the complaint normally.
-       */
-
-      if (
-        form.latitude === null ||
-        form.longitude === null
-      ) {
-
-        await createComplaint()
-
-        return
-
-      }
-
-
-      setExistingModal({
-
-        open: true,
-        loading: true,
-        complaints: []
-
-      })
-
-
-      try {
-
-        const { data } =
-          await complaintAPI.checkExisting({
-
-            title:
-              form.title,
-
-            description:
-              form.description,
-
-            department:
-              form.department,
-
-            latitude:
-              form.latitude,
-
-            longitude:
-              form.longitude
-
-          })
-
-
-        if (
-          data.existing &&
-          data.complaints?.length
-        ) {
-
-          setExistingModal({
-
-            open: true,
-            loading: false,
-            complaints:
-              data.complaints
-
-          })
-
-          return
-
-        }
-
-
-        /*
-         * No matching complaint.
-         * Close modal and create normally.
-         */
-
-        setExistingModal({
-
-          open: false,
-          loading: false,
-          complaints: []
-
-        })
-
-
-        await createComplaint()
-
-
-      } catch (err) {
-
-        /*
-         * If duplicate checking fails,
-         * DO NOT block complaint submission.
-         *
-         * We fall back to normal complaint creation.
-         */
-
-        console.error(
-          'Existing complaint check failed:',
-          err
-        )
-
-
-        setExistingModal({
-
-          open: false,
-          loading: false,
-          complaints: []
-
-        })
-
-
-        await createComplaint()
-
-      }
-
-    }
-
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     SUPPORT EXISTING COMPLAINT
-  ───────────────────────────────────────────────────────────────────────── */
-
-  const handleSupportExisting =
-    async complaint => {
-
-      if (loading) {
-        return
-      }
-
-
-      setLoading(true)
-
-
-      try {
-
-        await complaintAPI.support(
-          complaint.id
-        )
-
-
-        setExistingModal({
-
-          open: false,
-          loading: false,
-          complaints: []
-
-        })
-
-
-        toast.success(
-          'You supported the existing complaint!'
-        )
-
-
-        navigate(
-          `/user/complaints/${complaint.id}`
-        )
-
-
-      } catch (err) {
-
-        const message =
-          err.response?.data?.detail ||
-          'Unable to support this complaint.'
-
-
-        toast.error(message)
-
-      } finally {
-
-        setLoading(false)
-
-      }
-
-    }
-
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     RAISE DIFFERENT COMPLAINT
-  ───────────────────────────────────────────────────────────────────────── */
-
-  const handleRaiseDifferent =
-    async () => {
-
-      if (loading) {
-        return
-      }
-
-
-      setExistingModal({
-
-        open: false,
-        loading: false,
-        complaints: []
-
-      })
-
-
-      setLoading(true)
-
-
-      try {
-
-        await createComplaint()
-
-
-        toast.success(
-          'Complaint submitted successfully!'
-        )
-
-
-        navigate(
-          '/user/complaints'
-        )
-
-
-      } catch (err) {
-
-        const data =
-          err.response?.data
-
-
-        if (
-          data &&
-          typeof data === 'object'
-        ) {
-
-          setErrors(data)
-
-        } else {
-
-          toast.error(
-            'Submission failed. Please try again.'
-          )
-
-        }
-
-      } finally {
-
-        setLoading(false)
-
-      }
-
-    }
-
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     FORM SUBMIT
-  ───────────────────────────────────────────────────────────────────────── */
-
-  const handleSubmit = async e => {
-
-    e.preventDefault()
-
-
-    if (loading) {
-      return
-    }
-
-
-    const errs =
+    const validationErrors =
       validate()
 
-
     if (
-      Object.keys(errs).length
+      Object.keys(validationErrors).length
     ) {
-
-      setErrors(errs)
-
+      setErrors(
+        validationErrors
+      )
       return
-
     }
-
 
     setLoading(true)
 
-
     try {
 
-      /*
-       * First check for duplicate/similar
-       * complaints at the same location.
-       */
+      const formData =
+        new FormData()
 
-      await checkForExistingComplaint()
+      Object.entries(form).forEach(
+        ([key, value]) => {
 
-    } catch (err) {
+          if (
+            value !== '' &&
+            value !== null &&
+            value !== undefined
+          ) {
+            formData.append(
+              key,
+              value
+            )
+          }
+        }
+      )
+
+
+      if (photo?.blob) {
+
+        formData.append(
+          'image',
+          photo.blob,
+          photo.filename ||
+            'photo.jpg'
+        )
+      }
+
+
+      if (photo?.latitude) {
+
+        formData.append(
+          'latitude',
+          photo.latitude
+        )
+
+        formData.append(
+          'longitude',
+          photo.longitude
+        )
+      }
+
+
+      await complaintAPI.create(
+        formData
+      )
+
+      toast.success(
+        'Complaint submitted successfully!'
+      )
+
+      navigate(
+        '/user/complaints'
+      )
+
+    } catch (error) {
 
       const data =
-        err.response?.data
-
+        error.response?.data
 
       if (
         data &&
         typeof data === 'object'
       ) {
-
         setErrors(data)
-
       } else {
-
         toast.error(
           'Submission failed. Please try again.'
         )
-
       }
+
+    } finally {
 
       setLoading(false)
 
     }
-
   }
 
 
-  /* ─────────────────────────────────────────────────────────────────────────
-     RENDER
-  ───────────────────────────────────────────────────────────────────────── */
-
   return (
-
     <Layout title="Submit Complaint">
 
       <div
@@ -1897,9 +1289,8 @@ export default function SubmitComplaint() {
               marginBottom: 4
             }}
           >
-            📝 New Complaint
+            New Complaint
           </div>
-
 
           <div
             style={{
@@ -1916,23 +1307,23 @@ export default function SubmitComplaint() {
             onSubmit={handleSubmit}
           >
 
-            {/* TITLE */}
+            {/* Title */}
 
             <Input
               label="Complaint Title *"
               placeholder="Brief summary of the issue"
               value={form.title}
-              onChange={e =>
+              onChange={event =>
                 set(
                   'title',
-                  e.target.value
+                  event.target.value
                 )
               }
               error={errors.title}
             />
 
 
-            {/* DESCRIPTION */}
+            {/* Description */}
 
             <div
               style={{
@@ -1943,16 +1334,14 @@ export default function SubmitComplaint() {
               <label
                 style={{
                   display: 'flex',
-                  justifyContent:
-                    'space-between',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
                   fontSize: 11,
                   fontWeight: 700,
                   color: T.tx2,
                   marginBottom: 5,
-                  textTransform:
-                    'uppercase',
-                  letterSpacing: .5
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5
                 }}
               >
 
@@ -1976,7 +1365,7 @@ export default function SubmitComplaint() {
                     gap: 4
                   }}
                 >
-                  🤖 AI Suggest Department
+                  🤖 Suggest Department
                 </button>
 
               </label>
@@ -1985,15 +1374,13 @@ export default function SubmitComplaint() {
               <Textarea
                 placeholder="Describe the issue in detail — what, where, how severe…"
                 value={form.description}
-                onChange={e =>
+                onChange={event =>
                   set(
                     'description',
-                    e.target.value
+                    event.target.value
                   )
                 }
-                error={
-                  errors.description
-                }
+                error={errors.description}
                 style={{
                   minHeight: 110
                 }}
@@ -2002,7 +1389,7 @@ export default function SubmitComplaint() {
             </div>
 
 
-            {/* DEPARTMENT + LOCATION */}
+            {/* Department + Location */}
 
             <div
               style={{
@@ -2013,7 +1400,7 @@ export default function SubmitComplaint() {
               }}
             >
 
-              {/* DEPARTMENT */}
+              {/* Department */}
 
               <div>
 
@@ -2029,7 +1416,7 @@ export default function SubmitComplaint() {
                     marginBottom: 5,
                     textTransform:
                       'uppercase',
-                    letterSpacing: .5
+                    letterSpacing: 0.5
                   }}
                 >
                   Department *
@@ -2038,10 +1425,10 @@ export default function SubmitComplaint() {
 
                 <select
                   value={form.department}
-                  onChange={e =>
+                  onChange={event =>
                     set(
                       'department',
-                      e.target.value
+                      event.target.value
                     )
                   }
                   style={{
@@ -2054,7 +1441,8 @@ export default function SubmitComplaint() {
                           : T.brd
                       }`,
                     borderRadius: 9,
-                    padding: '9px 12px',
+                    padding:
+                      '9px 12px',
                     color: T.tx,
                     fontSize: 13,
                     fontFamily:
@@ -2070,22 +1458,26 @@ export default function SubmitComplaint() {
                     Select Department
                   </option>
 
-                  {depts.map(d => (
-
-                    <option
-                      key={d.id}
-                      value={d.id}
-                    >
-                      {d.icon} {d.name}
-                    </option>
-
-                  ))}
+                  {depts.map(
+                    department => (
+                      <option
+                        key={
+                          department.id
+                        }
+                        value={
+                          department.id
+                        }
+                      >
+                        {department.icon}{' '}
+                        {department.name}
+                      </option>
+                    )
+                  )}
 
                 </select>
 
 
                 {errors.department && (
-
                   <div
                     style={{
                       fontSize: 11,
@@ -2093,15 +1485,16 @@ export default function SubmitComplaint() {
                       marginTop: 4
                     }}
                   >
-                    {errors.department}
+                    {
+                      errors.department
+                    }
                   </div>
-
                 )}
 
               </div>
 
 
-              {/* LOCATION */}
+              {/* Location */}
 
               <div>
 
@@ -2117,7 +1510,7 @@ export default function SubmitComplaint() {
                     marginBottom: 5,
                     textTransform:
                       'uppercase',
-                    letterSpacing: .5
+                    letterSpacing: 0.5
                   }}
                 >
 
@@ -2138,7 +1531,8 @@ export default function SubmitComplaint() {
                         '3px 8px',
                       fontSize: 10,
                       fontWeight: 700,
-                      cursor: 'pointer'
+                      cursor:
+                        'pointer'
                     }}
                   >
                     📍 Current Location
@@ -2149,14 +1543,18 @@ export default function SubmitComplaint() {
 
                 <Input
                   placeholder="Area / Street / Landmark"
-                  value={form.location}
-                  onChange={e =>
+                  value={
+                    form.location
+                  }
+                  onChange={event =>
                     set(
                       'location',
-                      e.target.value
+                      event.target.value
                     )
                   }
-                  error={errors.location}
+                  error={
+                    errors.location
+                  }
                 />
 
               </div>
@@ -2164,16 +1562,16 @@ export default function SubmitComplaint() {
             </div>
 
 
-            {/* ADDRESS */}
+            {/* Address */}
 
             <Textarea
               label="Full Address (optional)"
               placeholder="Full address for precise location"
               value={form.address}
-              onChange={e =>
+              onChange={event =>
                 set(
                   'address',
-                  e.target.value
+                  event.target.value
                 )
               }
               style={{
@@ -2182,7 +1580,7 @@ export default function SubmitComplaint() {
             />
 
 
-            {/* PHOTO */}
+            {/* Photo Evidence */}
 
             <div
               style={{
@@ -2202,14 +1600,13 @@ export default function SubmitComplaint() {
                   marginBottom: 5,
                   textTransform:
                     'uppercase',
-                  letterSpacing: .5
+                  letterSpacing: 0.5
                 }}
               >
 
                 Photo Evidence
 
                 {photo && (
-
                   <span
                     style={{
                       color: T.ok,
@@ -2218,7 +1615,6 @@ export default function SubmitComplaint() {
                   >
                     ✅ CAPTURED
                   </span>
-
                 )}
 
               </label>
@@ -2233,7 +1629,7 @@ export default function SubmitComplaint() {
                   }}
                 >
 
-                  {/* CAMERA */}
+                  {/* Camera */}
 
                   <button
                     type="button"
@@ -2243,12 +1639,13 @@ export default function SubmitComplaint() {
                     style={{
                       flex: 1,
                       padding: 14,
-                      borderRadius: 10,
                       border:
                         `2px dashed ${T.brd}`,
+                      borderRadius: 10,
                       background: T.bg3,
                       color: T.tx2,
-                      cursor: 'pointer',
+                      cursor:
+                        'pointer',
                       display: 'flex',
                       alignItems:
                         'center',
@@ -2278,13 +1675,13 @@ export default function SubmitComplaint() {
                           fontWeight: 600
                         }}
                       >
-                        Capture Live Photo [Recomended]
+                        Capture Live Photo
                       </div>
 
                       <div
                         style={{
                           fontSize: 11,
-                          opacity: .7
+                          opacity: 0.7
                         }}
                       >
                         Auto-tags GPS coordinates
@@ -2296,18 +1693,19 @@ export default function SubmitComplaint() {
                   </button>
 
 
-                  {/* UPLOAD */}
+                  {/* Upload */}
 
                   <label
                     style={{
                       flex: 1,
                       padding: 14,
-                      borderRadius: 10,
                       border:
                         `2px dashed ${T.brd}`,
+                      borderRadius: 10,
                       background: T.bg3,
                       color: T.tx2,
-                      cursor: 'pointer',
+                      cursor:
+                        'pointer',
                       display: 'flex',
                       alignItems:
                         'center',
@@ -2337,13 +1735,13 @@ export default function SubmitComplaint() {
                           fontWeight: 600
                         }}
                       >
-                        Upload Image [GPS photo recomended]
+                        Upload Image
                       </div>
 
                       <div
                         style={{
                           fontSize: 11,
-                          opacity: .7
+                          opacity: 0.7
                         }}
                       >
                         JPG, PNG up to 10MB
@@ -2358,40 +1756,33 @@ export default function SubmitComplaint() {
                       style={{
                         display: 'none'
                       }}
-                      onChange={e => {
+                      onChange={event => {
 
                         const file =
-                          e.target.files?.[0]
+                          event.target.files?.[0]
 
-                        if (!file) {
-                          return
+                        if (file) {
+
+                          const url =
+                            URL.createObjectURL(
+                              file
+                            )
+
+                          setPhoto({
+                            blob: file,
+                            filename:
+                              file.name,
+                            previewUrl:
+                              url,
+                            latitude:
+                              null,
+                            longitude:
+                              null,
+                            timestamp:
+                              new Date().toISOString()
+                          })
+
                         }
-
-
-                        const url =
-                          URL.createObjectURL(
-                            file
-                          )
-
-
-                        setPhoto({
-
-                          blob: file,
-
-                          filename:
-                            file.name,
-
-                          previewUrl: url,
-
-                          latitude: null,
-
-                          longitude: null,
-
-                          timestamp:
-                            new Date()
-                              .toISOString()
-
-                        })
 
                       }}
                     />
@@ -2413,21 +1804,24 @@ export default function SubmitComplaint() {
 
                   <div
                     style={{
-                      position: 'relative'
+                      position:
+                        'relative'
                     }}
                   >
 
                     <img
-                      src={photo.previewUrl}
+                      src={
+                        photo.previewUrl
+                      }
                       alt="Evidence"
                       style={{
                         width: '100%',
                         maxHeight: 200,
-                        objectFit: 'cover',
+                        objectFit:
+                          'cover',
                         display: 'block'
                       }}
                     />
-
 
                     <div
                       style={{
@@ -2473,7 +1867,8 @@ export default function SubmitComplaint() {
                           'rgba(239,68,68,.85)',
                         border: 'none',
                         color: '#fff',
-                        cursor: 'pointer',
+                        cursor:
+                          'pointer',
                         fontSize: 14
                       }}
                     >
@@ -2497,7 +1892,6 @@ export default function SubmitComplaint() {
                   >
 
                     {photo.timestamp && (
-
                       <div>
                         🕐{' '}
                         {new Date(
@@ -2512,12 +1906,9 @@ export default function SubmitComplaint() {
                           }
                         )}
                       </div>
-
                     )}
 
-
                     {photo.filename && (
-
                       <div
                         style={{
                           fontFamily:
@@ -2528,35 +1919,33 @@ export default function SubmitComplaint() {
                       >
                         {photo.filename}
                       </div>
-
                     )}
 
-
                     {photo.latitude ? (
-
                       <div>
                         📍{' '}
                         {Math.abs(
                           photo.latitude
                         ).toFixed(5)}
-                        °{photo.latitude >= 0
+                        °
+                        {photo.latitude >=
+                        0
                           ? 'N'
-                          : 'S'}, {' '}
-
+                          : 'S'}
+                        ,{' '}
                         {Math.abs(
                           photo.longitude
                         ).toFixed(5)}
-                        °{photo.longitude >= 0
+                        °
+                        {photo.longitude >=
+                        0
                           ? 'E'
                           : 'W'}
                       </div>
-
                     ) : (
-
                       <div>
                         📍 GPS not available
                       </div>
-
                     )}
 
                   </div>
@@ -2568,7 +1957,7 @@ export default function SubmitComplaint() {
             </div>
 
 
-            {/* ANONYMOUS */}
+            {/* Anonymous */}
 
             <div
               style={{
@@ -2585,10 +1974,10 @@ export default function SubmitComplaint() {
                 checked={
                   form.is_anonymous
                 }
-                onChange={e =>
+                onChange={event =>
                   set(
                     'is_anonymous',
-                    e.target.checked
+                    event.target.checked
                   )
                 }
                 style={{
@@ -2614,7 +2003,7 @@ export default function SubmitComplaint() {
             </div>
 
 
-            {/* BUTTONS */}
+            {/* Submit */}
 
             <div
               style={{
@@ -2633,14 +2022,13 @@ export default function SubmitComplaint() {
                 Cancel
               </Button>
 
-
               <Button
                 type="submit"
                 loading={loading}
                 disabled={loading}
               >
                 {loading
-                  ? 'Checking...'
+                  ? 'Submitting...'
                   : 'Submit Complaint'}
               </Button>
 
@@ -2653,19 +2041,19 @@ export default function SubmitComplaint() {
       </div>
 
 
-      {/* ─────────────────────────────────────────────────────────────────────
-         AI CHATBOT MODAL
-      ───────────────────────────────────────────────────────────────────── */}
+      {/* ─────────────────────────────────────────
+          AI Chatbot Modal
+      ───────────────────────────────────────── */}
 
       <Modal
         open={chatbot.open}
         onClose={() =>
-          setChatbot(c => ({
-            ...c,
+          setChatbot(current => ({
+            ...current,
             open: false
           }))
         }
-        title="🤖 AI Department Assistant"
+        title="🤖 AI Department Suggester"
         maxWidth={460}
       >
 
@@ -2673,16 +2061,30 @@ export default function SubmitComplaint() {
           style={{
             background: T.bg3,
             borderRadius: 9,
-            padding: 10,
+            padding: 12,
             marginBottom: 14,
-            fontSize: 11,
+            fontSize: 12,
             color: T.tx2
           }}
         >
-          Using <strong>
-            TF-IDF + Logistic Regression
-          </strong> to classify your complaint
-          into the right department.
+          <div
+            style={{
+              fontWeight: 700,
+              marginBottom: 6,
+              color: T.tx
+            }}
+          >
+            Complaint Description:
+          </div>
+
+          <div
+            style={{
+              lineHeight: 1.5,
+              whiteSpace: 'pre-wrap'
+            }}
+          >
+            {form.description}
+          </div>
         </div>
 
 
@@ -2690,7 +2092,8 @@ export default function SubmitComplaint() {
 
           <Spinner />
 
-        ) : chatbot.suggestions.length === 0 ? (
+        ) : chatbot.suggestions.length ===
+          0 ? (
 
           <div
             style={{
@@ -2705,18 +2108,20 @@ export default function SubmitComplaint() {
         ) : (
 
           chatbot.suggestions.map(
-            (s, i) => (
+            (suggestion, index) => (
 
               <div
-                key={i}
+                key={index}
                 onClick={() =>
-                  selectSuggestion(s)
+                  selectSuggestion(
+                    suggestion
+                  )
                 }
                 style={{
                   background: T.bg3,
                   border:
                     `1px solid ${
-                      i === 0
+                      index === 0
                         ? T.pri
                         : T.brd
                     }`,
@@ -2725,7 +2130,8 @@ export default function SubmitComplaint() {
                   marginBottom: 8,
                   cursor: 'pointer',
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems:
+                    'center',
                   justifyContent:
                     'space-between'
                 }}
@@ -2739,11 +2145,15 @@ export default function SubmitComplaint() {
                       fontSize: 13
                     }}
                   >
-                    {['🥇', '🥈', '🥉'][i] ||
-                      '🔹'}{' '}
-                    {s.department}
+                    {
+                      ['🥇', '🥈', '🥉'][
+                        index
+                      ]
+                    }{' '}
+                    {
+                      suggestion.department
+                    }
                   </div>
-
 
                   <div
                     style={{
@@ -2761,7 +2171,7 @@ export default function SubmitComplaint() {
                         height: '100%',
                         background: T.pri,
                         width:
-                          `${s.confidence}%`
+                          `${suggestion.confidence}%`
                       }}
                     />
 
@@ -2777,13 +2187,12 @@ export default function SubmitComplaint() {
                     color: T.pri
                   }}
                 >
-                  {s.confidence}%
+                  {suggestion.confidence}%
                 </div>
 
               </div>
 
             )
-
           )
 
         )}
@@ -2791,356 +2200,11 @@ export default function SubmitComplaint() {
       </Modal>
 
 
-      {/* ─────────────────────────────────────────────────────────────────────
-         EXISTING COMPLAINT MODAL
-      ───────────────────────────────────────────────────────────────────── */}
-
-      <Modal
-        open={existingModal.open}
-        onClose={() => {
-
-          if (!existingModal.loading) {
-
-            setExistingModal({
-
-              open: false,
-              loading: false,
-              complaints: []
-
-            })
-
-          }
-
-        }}
-        title="⚠️ Similar Complaint Found"
-        maxWidth={520}
-      >
-
-        {existingModal.loading ? (
-
-          <div
-            style={{
-              textAlign: 'center',
-              padding: 25
-            }}
-          >
-
-            <Spinner />
-
-            <div
-              style={{
-                marginTop: 12,
-                fontSize: 13,
-                color: T.tx2
-              }}
-            >
-              Checking for similar complaints
-              at this location...
-            </div>
-
-          </div>
-
-        ) : (
-
-          <>
-
-            <div
-              style={{
-                background:
-                  'rgba(245,158,11,.08)',
-                border:
-                  '1px solid rgba(245,158,11,.25)',
-                borderRadius: 10,
-                padding: 12,
-                marginBottom: 14,
-                fontSize: 12,
-                color: T.tx2
-              }}
-            >
-
-              <strong>
-                We found a similar active complaint
-                nearby.
-              </strong>
-
-              <div
-                style={{
-                  marginTop: 5,
-                  color: T.tx3
-                }}
-              >
-                If this is the same issue, you can
-                support the existing complaint instead
-                of creating a duplicate.
-              </div>
-
-            </div>
-
-
-            {existingModal.complaints.map(
-              complaint => (
-
-                <div
-                  key={complaint.id}
-                  style={{
-                    background: T.bg3,
-                    border:
-                      `1px solid ${T.brd}`,
-                    borderRadius: 10,
-                    padding: 14,
-                    marginBottom: 10
-                  }}
-                >
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent:
-                        'space-between',
-                      gap: 10
-                    }}
-                  >
-
-                    <div
-                      style={{
-                        flex: 1
-                      }}
-                    >
-
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: T.tx
-                        }}
-                      >
-                        {complaint.title}
-                      </div>
-
-
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: T.tx3,
-                          marginTop: 5,
-                          lineHeight: 1.5
-                        }}
-                      >
-                        {complaint.description}
-                      </div>
-
-                    </div>
-
-
-                    <div
-                      style={{
-                        textAlign: 'right',
-                        whiteSpace:
-                          'nowrap'
-                      }}
-                    >
-
-                      {complaint.priority && (
-
-                        <div
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            textTransform:
-                              'uppercase',
-                            color:
-                              complaint.priority ===
-                              'critical'
-                                ? '#dc2626'
-                                : complaint.priority ===
-                                  'high'
-                                ? '#ef4444'
-                                : complaint.priority ===
-                                  'medium'
-                                ? '#f59e0b'
-                                : '#10b981'
-                          }}
-                        >
-                          {complaint.priority}
-                        </div>
-
-                      )}
-
-
-                      {complaint.priority_score !==
-                        undefined && (
-
-                        <div
-                          style={{
-                            fontSize: 10,
-                            color: T.tx3,
-                            marginTop: 3
-                          }}
-                        >
-                          Score:{' '}
-                          {complaint.priority_score}
-                          /5
-                        </div>
-
-                      )}
-
-                    </div>
-
-                  </div>
-
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                      marginTop: 10,
-                      fontSize: 10,
-                      color: T.tx3
-                    }}
-                  >
-
-                    {complaint.distance_meters !==
-                      undefined && (
-
-                      <span>
-                        📍{' '}
-                        {complaint.distance_meters}
-                        m away
-                      </span>
-
-                    )}
-
-
-                    {complaint.support_count !==
-                      undefined && (
-
-                      <span>
-                        👍{' '}
-                        {complaint.support_count}
-                        supporters
-                      </span>
-
-                    )}
-
-
-                    {complaint.status && (
-
-                      <span>
-                        🔄{' '}
-                        {complaint.status}
-                      </span>
-
-                    )}
-
-                  </div>
-
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 8,
-                      marginTop: 12
-                    }}
-                  >
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleSupportExisting(
-                          complaint
-                        )
-                      }
-                      disabled={loading}
-                      style={{
-                        flex: 1,
-                        padding:
-                          '9px 12px',
-                        borderRadius: 8,
-                        border: 'none',
-                        background:
-                          '#3b82f6',
-                        color: '#fff',
-                        fontWeight: 700,
-                        fontSize: 12,
-                        cursor:
-                          loading
-                            ? 'not-allowed'
-                            : 'pointer'
-                      }}
-                    >
-                      👍 Support Existing
-                    </button>
-
-                  </div>
-
-                </div>
-
-              )
-            )}
-
-
-            <div
-              style={{
-                borderTop:
-                  `1px solid ${T.brd}`,
-                paddingTop: 14,
-                marginTop: 14
-              }}
-            >
-
-              <div
-                style={{
-                  fontSize: 11,
-                  color: T.tx3,
-                  marginBottom: 9
-                }}
-              >
-                Is your complaint actually a
-                different issue?
-              </div>
-
-
-              <button
-                type="button"
-                onClick={
-                  handleRaiseDifferent
-                }
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 8,
-                  border:
-                    `1px solid ${T.brd}`,
-                  background: T.bg3,
-                  color: T.tx,
-                  fontWeight: 700,
-                  fontSize: 12,
-                  cursor:
-                    loading
-                      ? 'not-allowed'
-                      : 'pointer'
-                }}
-              >
-                ➕ Raise Different Complaint
-              </button>
-
-            </div>
-
-          </>
-
-        )}
-
-      </Modal>
-
-
-      {/* ─────────────────────────────────────────────────────────────────────
-         CAMERA MODAL
-      ───────────────────────────────────────────────────────────────────── */}
+      {/* ─────────────────────────────────────────
+          Camera Modal
+      ───────────────────────────────────────── */}
 
       {showCam && (
-
         <CameraCapture
 
           username={
@@ -3150,24 +2214,20 @@ export default function SubmitComplaint() {
             'user'
           }
 
-          onCapture={p => {
+          onCapture={photoData => {
 
-            setPhoto(p)
+            setPhoto(photoData)
 
-
-            if (
-              p.latitude !== null &&
-              p.longitude !== null
-            ) {
+            if (photoData.latitude) {
 
               set(
                 'latitude',
-                p.latitude
+                photoData.latitude
               )
 
               set(
                 'longitude',
-                p.longitude
+                photoData.longitude
               )
 
             }
@@ -3179,11 +2239,8 @@ export default function SubmitComplaint() {
           }
 
         />
-
       )}
 
     </Layout>
-
   )
-
 }
