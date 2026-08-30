@@ -96,7 +96,7 @@ export default function DeptDashboard() {
     <Layout title={isWorker ? "Worker Dashboard" : "Department Dashboard"}>
       {/* Welcome */}
       <div style={{ background:'linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))', border:`1px solid ${T.brd}`, borderRadius:14, padding:'18px 22px', marginBottom:22 }}>
-        <div style={{ fontSize:18, fontWeight:800, marginBottom:3 }}>Welcome, {user?.name?.split(' ')[0]} 👋</div>
+        <div style={{ fontSize:18, fontWeight:800, marginBottom:3 }}>Welcome, {user?.name}</div>
         <div style={{ fontSize:12, color:T.tx2 }}>{isWorker? "👷 Worker Portal": `🏢 ${user?.department_name}`} -IntelliFix</div>
       </div>
 
@@ -124,7 +124,7 @@ export default function DeptDashboard() {
         >
           {/* My Performance */}
           <Card>
-            <h3>⭐ My Performance</h3>
+            <h3>My Performance</h3>
 
             <p>
               Average Rating:{' '}
@@ -168,7 +168,7 @@ export default function DeptDashboard() {
                   fontWeight: 700,
                 }}
               >
-                🔔 Recent Notifications
+                Notifications
               </div>
 
               {notifications.length > 0 && (
@@ -429,7 +429,7 @@ export default function DeptDashboard() {
                 fontWeight: 700,
               }}
             >
-              🔔 Notifications
+              Notifications
             </div>
 
             {notifications.length > 0 && (
@@ -585,7 +585,7 @@ export default function DeptDashboard() {
                 marginBottom:16
               }}
             >
-              🏆 Worker Leaderboard
+              Worker Leaderboard
             </div>
          
 

@@ -1,7 +1,6 @@
 import React from "react";
 
 export function EmptyState({
-  icon = "📭",
   title = "Nothing here",
   subtitle = "No data available",
   action = null,
@@ -14,41 +13,35 @@ export function EmptyState({
         alignItems: "center",
         justifyContent: "center",
         textAlign: "center",
-        padding: "50px 20px",
+        padding: "60px 20px",
+        minHeight: 180,
       }}
     >
-      <div
-        style={{
-          fontSize: 52,
-          marginBottom: 16,
-        }}
-      >
-        {icon}
-      </div>
-
       <h3
         style={{
           margin: 0,
           color: "var(--text-primary)",
-          fontSize: 20,
+          fontSize: 18,
           fontWeight: 700,
         }}
       >
         {title}
       </h3>
 
-      <p
-        style={{
-          marginTop: 8,
-          marginBottom: 24,
-          color: "var(--text-secondary)",
-          fontSize: 14,
-          maxWidth: 320,
-          lineHeight: 1.6,
-        }}
-      >
-        {subtitle}
-      </p>
+      {subtitle && (
+        <p
+          style={{
+            marginTop: 8,
+            marginBottom: 20,
+            color: "var(--text-secondary)",
+            fontSize: 13,
+            maxWidth: 320,
+            lineHeight: 1.6,
+          }}
+        >
+          {subtitle}
+        </p>
+      )}
 
       {action}
     </div>

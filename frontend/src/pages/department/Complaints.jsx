@@ -100,15 +100,15 @@ export default function DeptComplaints() {
                     <span>📍 {c.address || c.location}</span>
 
                     <span>
-                      👤 {c.is_anonymous ? 'Anonymous' : c.user_name}
+                      {c.is_anonymous ? 'Anonymous' : c.user_name}
                     </span>
 
                     <span>
-                      👷 {c.assigned_to_name || 'Unassigned'}
+                      {c.assigned_to_name || 'Unassigned'}
                     </span>
 
                     <span>
-                      📅 {new Date(c.created_at).toLocaleDateString('en-IN')}
+                      {new Date(c.created_at).toLocaleDateString('en-IN')}
                     </span>
                   </div>
                 </div>
@@ -221,16 +221,16 @@ export function DeptComplaintDetail() {
           <div style={{ fontSize:13, color:T.tx2, lineHeight:1.65, marginBottom:14 }}>{c.description}</div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, fontSize:12 }}>
             {[
-                ['📍 Location', c.location],
-                ['👤 Citizen', c.is_anonymous ? 'Anonymous' : c.user_name],
-                ['📧 Email', c.is_anonymous ? '—' : c.user_email],
+                ['Location', c.location],
+                ['Citizen', c.is_anonymous ? 'Anonymous' : c.user_name],
+                ['Email', c.is_anonymous ? '—' : c.user_email],
 
-                ['👷 Worker', c.assigned_to_name || 'Unassigned'],
-                ['📱 Worker Phone', c.assigned_to_phone || '—'],
-                ['⚡ Priority Score', `${c.priority_score?.toFixed(1) || 0} / 100`],
+                ['Worker', c.assigned_to_name || 'Unassigned'],
+                ['Worker Phone', c.assigned_to_phone || '—'],
+                ['Priority Score', `${c.priority_score?.toFixed(1) || 0} / 5`],
 
-                ['📅 Submitted', new Date(c.created_at).toLocaleDateString('en-IN', { dateStyle:'long' })],
-                ['✅ Resolved', c.resolved_at ? new Date(c.resolved_at).toLocaleDateString('en-IN') : '—'],
+                ['Submitted', new Date(c.created_at).toLocaleDateString('en-IN', { dateStyle:'long' })],
+                ['Resolved', c.resolved_at ? new Date(c.resolved_at).toLocaleDateString('en-IN') : '—'],
               ].map(([l, v]) => (
               <div key={l}>
                 <div style={{ color:T.tx3, marginBottom:2 }}>{l}</div>
@@ -242,7 +242,7 @@ export function DeptComplaintDetail() {
         {c.latitude && c.longitude && (
               <Card>
                 <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>
-                  📍 Location
+                  Location
                 </div>
 
                 <div style={{ marginBottom:12 }}>

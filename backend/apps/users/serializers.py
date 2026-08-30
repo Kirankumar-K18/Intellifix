@@ -9,15 +9,25 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    department_name = serializers.CharField(source='department.name', read_only=True)
-    password        = serializers.CharField(write_only=True, required=False)
+    department_name = serializers.CharField(
+        source='department.name',
+        read_only=True
+    )
+
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=False
+    )
+
     assigned_count = serializers.SerializerMethodField()
     resolved_count = serializers.SerializerMethodField()
     in_progress_count = serializers.SerializerMethodField()
     avg_rating = serializers.SerializerMethodField()
 
     class Meta:
-        model  = User
+        model = User
+
         fields = [
             'id',
             'email',
@@ -37,27 +47,49 @@ class UserSerializer(serializers.ModelSerializer):
 
             'password'
         ]
-        read_only_fields = ['id', 'date_joined']
+
+        read_only_fields = [
+            'id',
+            'date_joined',
+        ]
 
     def validate_password(self, value):
         validate_password(value)
         return value
 
     def create(self, validated_data):
-        password = validated_data.pop('password')
+        password = validated_data.pop('password', None)
+
+        # Password is REQUIRED when creating a staff account.
+        role = validated_data.get('role')
+
+        if role in ['admin', 'department_admin', 'worker'] and not password:
+            raise serializers.ValidationError({
+                'password': 'Password is required for staff accounts.'
+            })
+
         user = User(**validated_data)
-        user.set_password(password)
+
+        if password:
+            user.set_password(password)
+
         user.save()
+
         return user
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
         if password:
             instance.set_password(password)
+
         instance.save()
+
         return instance
+
     def get_assigned_count(self, obj):
         if not obj.is_worker:
             return 0
@@ -65,7 +97,6 @@ class UserSerializer(serializers.ModelSerializer):
         return Complaint.objects.filter(
             assigned_to=obj
         ).count()
-
 
     def get_resolved_count(self, obj):
         if not obj.is_worker:
@@ -76,7 +107,6 @@ class UserSerializer(serializers.ModelSerializer):
             status='resolved'
         ).count()
 
-
     def get_in_progress_count(self, obj):
         if not obj.is_worker:
             return 0
@@ -86,17 +116,17 @@ class UserSerializer(serializers.ModelSerializer):
             status='in_progress'
         ).count()
 
-
     def get_avg_rating(self, obj):
         if not obj.is_worker:
             return 0
 
         avg = Feedback.objects.filter(
             complaint__assigned_to=obj
-        ).aggregate(avg=Avg('rating'))['avg']
+        ).aggregate(
+            avg=Avg('rating')
+        )['avg']
 
         return round(avg or 0, 1)
-
 
 class RegisterSerializer(serializers.ModelSerializer):
     password  = serializers.CharField(write_only=True, min_length=6)

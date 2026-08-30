@@ -154,7 +154,7 @@ export function ComplaintDetail() {
           </div>
           <div style={{ fontSize:13, color:T.tx2, lineHeight:1.6, marginBottom:14 }}>{c.description}</div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, fontSize:12 }}>
-            {[['📍 Location', c.location], ['🏢 Department', c.department_name], ['📅 Submitted', new Date(c.created_at).toLocaleDateString('en-IN',{dateStyle:'long'})], ['⚡ Priority Score', `${c.priority_score?.toFixed(1) || 0}/100`]].map(([l,v]) => (
+            {[['Location', c.location], ['Department', c.department_name], ['Submitted', new Date(c.created_at).toLocaleDateString('en-IN',{dateStyle:'long'})], ['Priority Score', `${c.priority_score?.toFixed(1) || 0}/5`]].map(([l,v]) => (
               <div key={l}><span style={{ color:T.tx3 }}>{l}</span><div style={{ fontWeight:600, marginTop:2 }}>{v}</div></div>
             ))}
           </div>
@@ -162,7 +162,7 @@ export function ComplaintDetail() {
         {/* Assigned Worker */}
         <Card>
           <div style={{ fontSize:13, fontWeight:700, marginBottom:12 }}>
-            👷 Assigned Worker
+            Assigned Worker
           </div>
 
           <div
@@ -175,9 +175,9 @@ export function ComplaintDetail() {
           >
             {c.assigned_to_name ? (
               <>
-                <div>👤 {c.assigned_to_name}</div>
-                <div>📧 {c.assigned_to_email}</div>
-                <div>📱 {c.assigned_to_phone || 'N/A'}</div>
+                <div>{c.assigned_to_name}</div>
+                <div>email : {c.assigned_to_email}</div>
+                <div>Ph : {c.assigned_to_phone || 'N/A'}</div>
               </>
             ) : (
               <div

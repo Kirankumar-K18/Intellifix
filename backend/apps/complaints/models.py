@@ -97,6 +97,32 @@ class Complaint(models.Model):
             created_at__gte=cutoff,
         ).exclude(pk=self.pk).count()
 
+class ComplaintSupport(models.Model):
+    complaint = models.ForeignKey(
+        Complaint,
+        on_delete=models.CASCADE,
+        related_name='supports'
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='complaint_supports'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'complaint_supports'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['complaint', 'user'],
+                name='unique_complaint_support'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.user} supports Complaint #{self.complaint_id}'
 
 class ComplaintUpdate(models.Model):
     """Timeline of status changes."""

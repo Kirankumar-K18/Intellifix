@@ -24,8 +24,10 @@ export function Table({
           style={{
             width: "100%",
             borderCollapse: "collapse",
+            minWidth: 1000,
           }}
         >
+          {/* TABLE HEADER */}
           <thead
             style={{
               background: "var(--bg-body)",
@@ -39,18 +41,19 @@ export function Table({
                     padding: "14px 18px",
                     textAlign: "left",
                     color: "var(--text-secondary)",
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: 700,
                     borderBottom: "1px solid var(--border)",
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {col.title}
+                  {col.label}
                 </th>
               ))}
             </tr>
           </thead>
 
+          {/* TABLE BODY */}
           <tbody>
             {data.length === 0 ? (
               <tr>
@@ -68,16 +71,17 @@ export function Table({
             ) : (
               data.map((row, index) => (
                 <tr
-                  key={index}
+                  key={row.id || index}
                   style={{
-                    transition: ".2s",
+                    transition: "background .2s ease",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background =
                       "rgba(59,130,246,.05)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.background =
+                      "transparent";
                   }}
                 >
                   {columns.map((col) => (
@@ -85,13 +89,21 @@ export function Table({
                       key={col.key}
                       style={{
                         padding: "14px 18px",
-                        borderBottom: "1px solid var(--border)",
+                        borderBottom:
+                          "1px solid var(--border)",
                         color: "var(--text-primary)",
-                        fontSize: 14,
+                        fontSize: 13,
+                        whiteSpace:
+                          col.key === "actions"
+                            ? "nowrap"
+                            : "normal",
                       }}
                     >
                       {col.render
-                        ? col.render(row[col.key], row)
+                        ? col.render(
+                            row[col.key],
+                            row
+                          )
                         : row[col.key]}
                     </td>
                   ))}

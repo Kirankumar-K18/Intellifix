@@ -30,12 +30,12 @@ export default function UserDashboard() {
   return (
     <Layout
       title="My Dashboard"
-      action={<Link to="/user/submit"><Button>+ Submit Complaint</Button></Link>}
+      action={<Link to="/user/submit"><Button>Submit Complaint</Button></Link>}
     >
       {/* Welcome banner */}
       <div style={{ background:'linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))', border:`1px solid ${T.brd}`, borderRadius:14, padding:'20px 24px', marginBottom:24, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div>
-          <div style={{ fontSize:20, fontWeight:800, marginBottom:4 }}>Welcome, {user?.name?.split(' ')[0]} 👋</div>
+          <div style={{ fontSize:20, fontWeight:800, marginBottom:4 }}>Welcome, {user?.name}</div>
           <div style={{ fontSize:13, color:T.tx2 }}>Track your complaints and stay updated on resolutions.</div>
         </div>
         {unreadN > 0 && (
@@ -48,10 +48,30 @@ export default function UserDashboard() {
 
       {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
-        <StatCard label="Total Complaints" value={total}    icon="📋" color={T.pri} />
-        <StatCard label="Resolved"         value={resolved} icon="✅" color={T.ok}  sub={`${total ? Math.round(resolved/total*100) : 0}% resolution rate`} />
-        <StatCard label="Pending"          value={pending}  icon="⏳" color={T.warn} />
-        <StatCard label="In Progress"      value={inProg}   icon="🔧" color={T.acc2} />
+        <StatCard
+          label="Total Complaints"
+          value={total}
+          color={T.pri}
+        />
+
+        <StatCard
+          label="Resolved"
+          value={resolved}
+          color={T.ok}
+          sub={`${total ? Math.round(resolved / total * 100) : 0}% resolution rate`}
+        />
+
+        <StatCard
+          label="Pending"
+          value={pending}
+          color={T.warn}
+        />
+
+        <StatCard
+          label="In Progress"
+          value={inProg}
+          color={T.acc2}
+        />
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
@@ -62,7 +82,10 @@ export default function UserDashboard() {
             <Link to="/user/complaints" style={{ fontSize:11, color:T.pri }}>View all →</Link>
           </div>
           {recent.length === 0
-            ? <EmptyState icon="📋" title="No complaints yet" subtitle="Submit your first complaint" />
+            ? <EmptyState
+                title="No complaints yet"
+                subtitle="Submit your first complaint"
+              />
             : recent.map(c => (
               <Link key={c.id} to={`/user/complaints/${c.id}`} style={{ textDecoration:'none', color:'inherit' }}>
                 <div style={{ display:'flex', gap:10, alignItems:'center', padding:'9px 0', borderBottom:`1px solid ${T.brd}`, cursor:'pointer' }}
@@ -89,7 +112,7 @@ export default function UserDashboard() {
             </button>
           </div>
           {notifs.length === 0
-            ? <EmptyState icon="🔔" title="No notifications" />
+            ? <EmptyState title="No notifications" />
             : notifs.slice(0,6).map(n => (
               <div key={n.id} style={{ padding:'9px 0', borderBottom:`1px solid ${T.brd}`, borderLeft: n.is_read ? 'none' : `2px solid ${T.pri}`, paddingLeft: n.is_read ? 0 : 10 }}>
                 <div style={{ fontSize:12, fontWeight:600, marginBottom:2 }}>{n.title}</div>

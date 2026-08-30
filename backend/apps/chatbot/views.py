@@ -22,7 +22,22 @@ def suggest_department(request):
     from ml.predictor import predict_department
     from apps.departments.models import Department
 
-    predictions = predict_department(description, top_n=3)
+    active_departments = Department.objects.filter(
+        is_active=True
+    )
+
+    allowed_departments = list(
+        active_departments.values_list(
+            "name",
+            flat=True
+        )
+    )
+
+    predictions = predict_department(
+        description,
+        top_n=3,
+        allowed_departments=allowed_departments
+    )
 
     results = []
     for pred in predictions:
