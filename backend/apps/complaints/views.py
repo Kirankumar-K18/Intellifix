@@ -257,16 +257,35 @@ class IsOwnerOrOfficialOrAdmin(
     ):
         u = request.user
 
+        # Admin can access everything
         if u.is_admin_user:
             return True
 
+        # Worker can access ONLY complaints
+        # assigned to that worker
+        if u.is_worker:
+            return obj.assigned_to_id == u.id
+
+        # Department Admin can access complaints
+        # belonging to their department
         if (
-            (u.is_worker or u.is_department_admin)
+            u.is_department_admin
             and obj.department == u.department
         ):
             return True
 
-        return obj.user == u
+        # Original complaint owner
+        if obj.user == u:
+            return True
+
+        # User who supported this complaint
+        if ComplaintSupport.objects.filter(
+            complaint=obj,
+            user=u
+        ).exists():
+            return True
+
+        return False
 
 
 # ============================================================
@@ -1014,15 +1033,33 @@ Comment:
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def my_complaints(request):
+    """
+    Return complaints relevant to the current user.
+
+    A complaint is shown when:
+
+    1. The user originally raised the complaint
+       OR
+    2. The user supported the complaint.
+
+    Therefore, if User 2 supports a complaint raised by
+    User 1, that same complaint will also appear in
+    User 2's "My Complaints" section.
+    """
 
     qs = Complaint.objects.filter(
-        user=request.user
+        Q(user=request.user)
+        | Q(supports__user=request.user)
     ).select_related(
+        "user",
         "department",
         "assigned_to",
     ).prefetch_related(
+        "updates",
         "feedback",
         "supports__user",
+    ).distinct().order_by(
+        "-created_at"
     )
 
     serializer = ComplaintSerializer(

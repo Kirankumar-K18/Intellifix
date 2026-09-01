@@ -49,34 +49,34 @@ export default function Performance() {
         }}
       >
         <Card>
-          <h3>📋 Assigned</h3>
+          <h3>Assigned</h3>
           <h1>{assigned}</h1>
         </Card>
 
         <Card>
-          <h3>⏳ Pending</h3>
+          <h3>Pending</h3>
           <h1>{pending}</h1>
         </Card>
 
         <Card>
-          <h3>🔄 In Progress</h3>
+          <h3>In Progress</h3>
           <h1>{progress}</h1>
         </Card>
 
         <Card>
-          <h3>✅ Resolved</h3>
+          <h3>Resolved</h3>
           <h1>{resolved}</h1>
         </Card>
       </div>
 
       <Card style={{ marginBottom: 20 }}>
-        <h3>⭐ Performance Summary</h3>
+        <h3>Performance Summary</h3>
         <p>Average Rating: {avgRating} ⭐</p>
         <p>Resolved Complaints: {resolved}</p>
       </Card>
 
       <Card style={{ marginBottom: 20 }}>
-        <h3>💬 Recent Feedback</h3>
+        <h3>Recent Feedback</h3>
 
         {feedbacks.length === 0 ? (
           <p>No feedback received yet.</p>
@@ -98,7 +98,7 @@ export default function Performance() {
       </Card>
 
       <Card>
-        <h3>📋 Assigned Complaints</h3>
+        <h3>Assigned Complaints</h3>
 
         <table style={{ width: '100%' }}>
           <thead>

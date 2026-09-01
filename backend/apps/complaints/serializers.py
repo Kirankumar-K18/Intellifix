@@ -35,7 +35,7 @@ class ComplaintUpdateSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Complaint
+        model = ComplaintUpdate
 
         fields = [
             'id',
@@ -65,12 +65,14 @@ class FeedbackSerializer(serializers.ModelSerializer):
 
     assigned_to = serializers.IntegerField(
         source='complaint.assigned_to.id',
-        read_only=True
+        read_only=True,
+        allow_null=True
     )
 
     assigned_to_name = serializers.CharField(
         source='complaint.assigned_to.name',
-        read_only=True
+        read_only=True,
+        allow_null=True
     )
 
     class Meta:
@@ -112,17 +114,25 @@ class FeedbackCreateSerializer(serializers.ModelSerializer):
 
         user = self.context['request'].user
 
+        # Only the original complaint reporter can
+        # submit feedback.
         if complaint.user != user:
+
             raise serializers.ValidationError(
                 'You can only rate your own complaints.'
             )
 
-        if complaint.status not in ('resolved', 'closed'):
+        if complaint.status not in (
+            'resolved',
+            'closed'
+        ):
+
             raise serializers.ValidationError(
                 'Complaint must be resolved before rating.'
             )
 
         if hasattr(complaint, 'feedback'):
+
             raise serializers.ValidationError(
                 'Already submitted feedback for this complaint.'
             )
@@ -246,6 +256,12 @@ class ComplaintSerializer(serializers.ModelSerializer):
 
     user_has_supported = serializers.SerializerMethodField()
 
+    # ========================================================
+    # CURRENT USER RELATIONSHIP
+    # ========================================================
+
+    user_relationship = serializers.SerializerMethodField()
+
     class Meta:
 
         model = Complaint
@@ -292,10 +308,19 @@ class ComplaintSerializer(serializers.ModelSerializer):
 
             'frequency',
 
-            # Community support
+            # ------------------------------------------------
+            # COMMUNITY SUPPORT
+            # ------------------------------------------------
+
             'support_count',
             'supporters',
             'user_has_supported',
+
+            # ------------------------------------------------
+            # CURRENT USER RELATIONSHIP
+            # ------------------------------------------------
+
+            'user_relationship',
 
             'created_at',
             'updated_at',
@@ -326,7 +351,10 @@ class ComplaintSerializer(serializers.ModelSerializer):
 
     def get_has_feedback(self, obj):
 
-        return hasattr(obj, 'feedback') and obj.feedback is not None
+        return (
+            hasattr(obj, 'feedback')
+            and obj.feedback is not None
+        )
 
     # ========================================================
     # IMAGE URL
@@ -368,8 +396,9 @@ class ComplaintSerializer(serializers.ModelSerializer):
 
         request = self.context.get('request')
 
-        # Only officials/admins can see supporter details
+        # Only officials/admins can see supporter details.
         if not request:
+
             return []
 
         user = request.user
@@ -379,6 +408,7 @@ class ComplaintSerializer(serializers.ModelSerializer):
             or user.is_department_admin
             or user.is_worker
         ):
+
             return []
 
         return [
@@ -403,7 +433,11 @@ class ComplaintSerializer(serializers.ModelSerializer):
 
         request = self.context.get('request')
 
-        if not request or not request.user.is_authenticated:
+        if (
+            not request
+            or not request.user.is_authenticated
+        ):
+
             return False
 
         return ComplaintSupport.objects.filter(
@@ -411,12 +445,46 @@ class ComplaintSerializer(serializers.ModelSerializer):
             user=request.user
         ).exists()
 
+    # ========================================================
+    # CURRENT USER RELATIONSHIP
+    # ========================================================
+
+    def get_user_relationship(self, obj):
+
+        request = self.context.get('request')
+
+        if (
+            not request
+            or not request.user.is_authenticated
+        ):
+
+            return 'none'
+
+        user = request.user
+
+        # Original reporter
+        if obj.user_id == user.id:
+
+            return 'owner'
+
+        # User who supported the complaint
+        if ComplaintSupport.objects.filter(
+            complaint=obj,
+            user=user
+        ).exists():
+
+            return 'supporter'
+
+        return 'none'
+
 
 # ============================================================
 # COMPLAINT CREATE SERIALIZER
 # ============================================================
 
-class ComplaintCreateSerializer(serializers.ModelSerializer):
+class ComplaintCreateSerializer(
+    serializers.ModelSerializer
+):
 
     class Meta:
 
@@ -440,7 +508,10 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         ]
 
     @transaction.atomic
-    def create(self, validated_data):
+    def create(
+        self,
+        validated_data
+    ):
 
         request = self.context["request"]
 
@@ -448,7 +519,9 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         # CREATE COMPLAINT
         # ====================================================
 
-        complaint = Complaint(**validated_data)
+        complaint = Complaint(
+            **validated_data
+        )
 
         complaint.user = request.user
 
@@ -469,13 +542,19 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
 
             if coords:
 
-                complaint.latitude = coords["latitude"]
+                complaint.latitude = (
+                    coords["latitude"]
+                )
 
-                complaint.longitude = coords["longitude"]
+                complaint.longitude = (
+                    coords["longitude"]
+                )
 
-                complaint.address = coords["address"]
+                complaint.address = (
+                    coords["address"]
+                )
 
-        # Save first so uploaded image exists
+        # Save first so uploaded image exists.
         complaint.save()
 
         # ====================================================
@@ -496,7 +575,9 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
                     "image": result["reason"]
                 })
 
-            complaint.image_prediction = result["prediction"]
+            complaint.image_prediction = (
+                result["prediction"]
+            )
 
             if result["label"] == "relevant":
 
@@ -550,10 +631,8 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         # COMMUNITY SUPPORT SCORE
         # ====================================================
 
-        # A new complaint starts with zero supporters.
         support_count = complaint.supports.count()
 
-        # Maximum support contribution = 5
         support_score = min(
             support_count,
             5
@@ -561,14 +640,6 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
 
         # ====================================================
         # FINAL PRIORITY SCORE
-        #
-        # Maximum = 5
-        #
-        # Severity          35%
-        # Population        20%
-        # Frequency         20%
-        # Image              15%
-        # Community Support  10%
         # ====================================================
 
         final_score = (
@@ -585,9 +656,6 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
 
         )
 
-        # Safety clamp:
-        # Priority must always remain between 0 and 5.
-
         final_score = max(
             0,
             min(final_score, 5)
@@ -595,9 +663,13 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
 
         complaint.severity = severity
 
-        complaint.population_score = population_score
+        complaint.population_score = (
+            population_score
+        )
 
-        complaint.frequency_score = frequency_score
+        complaint.frequency_score = (
+            frequency_score
+        )
 
         complaint.priority_score = round(
             final_score,
@@ -679,7 +751,9 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
 
             )
 
-            complaint.assigned_to = selected_worker
+            complaint.assigned_to = (
+                selected_worker
+            )
 
             complaint.save(
                 update_fields=[
@@ -841,6 +915,31 @@ class ComplaintStatusSerializer(
             'note',
         ]
 
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(
+            *args,
+            **kwargs
+        )
+
+        request = self.context.get(
+            'request'
+        )
+
+        # ----------------------------------------------------
+        # WORKER CANNOT ASSIGN OR REASSIGN
+        # ----------------------------------------------------
+
+        if (
+            request
+            and request.user.is_authenticated
+            and request.user.is_worker
+        ):
+
+            self.fields[
+                'assigned_to'
+            ].read_only = True
+
     def update(
         self,
         instance,
@@ -853,6 +952,10 @@ class ComplaintStatusSerializer(
             send_status_notification
         )
 
+        request = self.context.get(
+            'request'
+        )
+
         note = validated_data.pop(
             'note',
             ''
@@ -861,6 +964,10 @@ class ComplaintStatusSerializer(
         old_worker = instance.assigned_to
 
         old_status = instance.status
+
+        # ====================================================
+        # UPDATE COMPLAINT
+        # ====================================================
 
         instance = super().update(
             instance,
@@ -901,6 +1008,7 @@ class ComplaintStatusSerializer(
         elif (
             old_worker
             and old_worker != instance.assigned_to
+            and instance.assigned_to
         ):
 
             Notification.objects.create(
@@ -930,9 +1038,11 @@ class ComplaintStatusSerializer(
 
                 complaint=instance,
 
-                updated_by=self.context[
-                    'request'
-                ].user,
+                updated_by=(
+                    request.user
+                    if request
+                    else None
+                ),
 
                 old_status=old_status,
 
@@ -995,8 +1105,6 @@ Thank you for using IntelliFix.
                 pass
 
         return instance
-
-
 # ============================================================
 # COMPLAINT MAP SERIALIZER
 # ============================================================

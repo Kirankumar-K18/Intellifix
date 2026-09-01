@@ -122,7 +122,7 @@ class ComplaintSupport(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.user} supports Complaint #{self.complaint_id}'
+        return f'{self.user} supports Complaint '
 
 class ComplaintUpdate(models.Model):
     """Timeline of status changes."""

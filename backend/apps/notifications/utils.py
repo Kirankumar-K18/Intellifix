@@ -6,11 +6,11 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 STATUS_MESSAGES = {
-    'pending':     ('Complaint Received', 'Your complaint #{id} has been received and is pending review.'),
-    'in_progress': ('Complaint In Progress', 'Your complaint #{id} "{title}" is now being worked on by our team.'),
-    'resolved':    ('Complaint Resolved', 'Your complaint #{id} "{title}" has been resolved. Please rate your experience.'),
-    'closed':      ('Complaint Closed', 'Your complaint #{id} "{title}" has been closed.'),
-    'rejected':    ('Complaint Rejected', 'Your complaint #{id} "{title}" has been reviewed and rejected. Please contact support for more information.'),
+    'pending':     ('Complaint Received', 'Your complaint  has been received and is pending review.'),
+    'in_progress': ('Complaint In Progress', 'Your complaint "{title}" is now being worked on by our team.'),
+    'resolved':    ('Complaint Resolved', 'Your complaint "{title}" has been resolved. Please rate your experience.'),
+    'closed':      ('Complaint Closed', 'Your complaint "{title}" has been closed.'),
+    'rejected':    ('Complaint Rejected', 'Your complaint "{title}" has been reviewed and rejected. Please contact support for more information.'),
 }
 
 
@@ -45,7 +45,7 @@ def send_status_notification(complaint):
                 fail_silently  = True,
             )
         except Exception as e:
-            logger.warning(f'Email send failed for complaint #{complaint.id}: {e}')
+            logger.warning(f'Email send failed for this complaint ')
 
 
 def create_notification(user, title, message, complaint=None, notif_type='system'):

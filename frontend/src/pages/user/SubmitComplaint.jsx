@@ -13,6 +13,14 @@ import {
 } from '../../components/common/UI'
 import toast from 'react-hot-toast'
 import { T } from '../../styles/theme'
+import {
+  MapContainer,
+  TileLayer,
+  CircleMarker,
+  useMap,
+  useMapEvents
+} from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
 
 
 /* ─────────────────────────────────────────────────────────────
@@ -907,6 +915,33 @@ function CameraCapture({ onCapture, onClose, username }) {
 
 
 /* ─────────────────────────────────────────────────────────────
+   Complaint Location Map Helpers
+───────────────────────────────────────────────────────────── */
+
+function ComplaintMapClickHandler({ onSelect }) {
+  useMapEvents({
+    click(event) {
+      onSelect(event.latlng.lat, event.latlng.lng)
+    }
+  })
+
+  return null
+}
+
+function ComplaintMapViewController({ position }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (position) {
+      map.setView(position, 16)
+    }
+  }, [position, map])
+
+  return null
+}
+
+
+/* ─────────────────────────────────────────────────────────────
    Main Submit Complaint Page
 ───────────────────────────────────────────────────────────── */
 
@@ -938,6 +973,14 @@ export default function SubmitComplaint() {
 
   const [showCam, setShowCam] = useState(false)
 
+  const [showMap, setShowMap] = useState(false)
+
+  const [mapSearch, setMapSearch] = useState('')
+
+  const [mapPosition, setMapPosition] = useState(null)
+
+  const [mapSearchLoading, setMapSearchLoading] = useState(false)
+
   const [loading, setLoading] = useState(false)
 
   const [errors, setErrors] = useState({})
@@ -955,6 +998,9 @@ export default function SubmitComplaint() {
 
   const [selectedExistingComplaint, setSelectedExistingComplaint] =
     useState(null)
+
+  // Skip duplicate check once when the user chooses to raise a different issue.
+  const skipExistingCheckRef = useRef(false)
 
 
   /* ─────────────────────────────────────────────
@@ -983,78 +1029,111 @@ export default function SubmitComplaint() {
 
 
   /* ─────────────────────────────────────────────
-     Current Location
+     Complaint Location
   ───────────────────────────────────────────── */
 
-  const useCurrentLocation = () => {
-
-    if (!navigator.geolocation) {
-      toast.error(
-        'Geolocation not supported'
+  const reverseGeocodeLocation = async (latitude, longitude) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
       )
+
+      const data = await response.json()
+
+      return data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+    } catch {
+      return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+    }
+  }
+
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation not supported')
       return
     }
 
     navigator.geolocation.getCurrentPosition(
-
       async ({ coords }) => {
+        const latitude = coords.latitude
+        const longitude = coords.longitude
 
-        set(
-          'latitude',
-          coords.latitude
+        const address = await reverseGeocodeLocation(
+          latitude,
+          longitude
         )
 
-        set(
-          'longitude',
-          coords.longitude
-        )
+        set('latitude', latitude)
+        set('longitude', longitude)
+        set('address', address)
+        set('location', address)
 
-        try {
+        setMapPosition([latitude, longitude])
 
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}`
-          )
-
-          const data =
-            await response.json()
-
-          set(
-            'address',
-            data.display_name
-          )
-
-          if (!form.location.trim()) {
-            set(
-              'location',
-              data.display_name
-            )
-          }
-
-        } catch {
-
-          set(
-            'location',
-            'Current Location'
-          )
-        }
-
-        toast.success(
-          'Location detected'
-        )
+        toast.success('Current location selected')
       },
-
       () => {
-        toast.error(
-          'Unable to fetch location'
-        )
+        toast.error('Unable to fetch current location')
       },
-
       {
         enableHighAccuracy: true,
         timeout: 15000,
         maximumAge: 0
       }
     )
+  }
+
+
+  const selectMapLocation = async (latitude, longitude) => {
+    const address = await reverseGeocodeLocation(
+      latitude,
+      longitude
+    )
+
+    set('latitude', latitude)
+    set('longitude', longitude)
+    set('address', address)
+    set('location', address)
+
+    setMapPosition([latitude, longitude])
+    setMapSearch(address)
+    setShowMap(false)
+
+    toast.success('Location selected')
+  }
+
+
+  const searchMapLocation = async () => {
+    const query = mapSearch.trim()
+
+    if (!query) {
+      toast.error('Enter a location to search')
+      return
+    }
+
+    setMapSearchLoading(true)
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+      )
+
+      const results = await response.json()
+
+      if (!results.length) {
+        toast.error('Location not found')
+        return
+      }
+
+      const latitude = parseFloat(results[0].lat)
+      const longitude = parseFloat(results[0].lon)
+
+      setMapPosition([latitude, longitude])
+    } catch {
+      toast.error('Unable to search location')
+    } finally {
+      setMapSearchLoading(false)
+    }
   }
 
 
@@ -1149,9 +1228,13 @@ export default function SubmitComplaint() {
         'Description is required'
     }
 
-    if (!form.location) {
+    if (
+      !form.location ||
+      form.latitude === null ||
+      form.longitude === null
+    ) {
       validationErrors.location =
-        'Location is required'
+        'Please select a location using Current Location or Select on Map'
     }
 
     if (!form.department) {
@@ -1164,108 +1247,148 @@ export default function SubmitComplaint() {
 
 
   /* ─────────────────────────────────────────────
+     Complaint Creation
+  ───────────────────────────────────────────── */
+
+  const createComplaint = async () => {
+    const formData = new FormData()
+
+    Object.entries(form).forEach(([key, value]) => {
+      if (value !== '' && value !== null && value !== undefined) {
+        formData.append(key, value)
+      }
+    })
+
+    if (photo?.blob) {
+      formData.append(
+        'image',
+        photo.blob,
+        photo.filename || 'photo.jpg'
+      )
+    }
+
+    if (form.latitude !== null && form.longitude !== null) {
+      formData.set('latitude', form.latitude)
+      formData.set('longitude', form.longitude)
+    }
+
+    await complaintAPI.create(formData)
+
+    toast.success('Complaint submitted successfully!')
+    navigate('/user/complaints')
+  }
+
+
+  /* ─────────────────────────────────────────────
+     Check Existing Complaint
+  ───────────────────────────────────────────── */
+
+  const checkForExistingComplaint = async () => {
+    if (skipExistingCheckRef.current) {
+      skipExistingCheckRef.current = false
+      await createComplaint()
+      return
+    }
+
+    // The form validation already requires coordinates.
+    // Use a null/undefined-safe check here so the duplicate check
+    // is never accidentally skipped because of an undefined value.
+    if (form.latitude == null || form.longitude == null) {
+      throw new Error('Complaint location coordinates are missing.')
+    }
+
+    setCheckingExisting(true)
+
+    try {
+      const { data } = await complaintAPI.checkExisting({
+        title: form.title,
+        description: form.description,
+        department: form.department,
+        latitude: form.latitude,
+        longitude: form.longitude
+      })
+
+      if (data?.existing && Array.isArray(data.complaints) && data.complaints.length > 0) {
+        setExistingComplaints(data.complaints)
+        setSelectedExistingComplaint(null)
+        return
+      }
+
+      await createComplaint()
+    } catch (error) {
+      console.error('Existing complaint check failed:', error)
+
+      toast.error(
+        'Could not check existing complaints. Continuing with submission.'
+      )
+
+      await createComplaint()
+    } finally {
+      setCheckingExisting(false)
+    }
+  }
+
+
+  /* ─────────────────────────────────────────────
+     Support Existing Complaint
+  ───────────────────────────────────────────── */
+
+  const supportExistingComplaint = async complaintId => {
+    setSelectedExistingComplaint(complaintId)
+    setCheckingExisting(true)
+
+    try {
+      await complaintAPI.support(complaintId)
+
+      toast.success('You are now supporting this issue!')
+
+      setExistingComplaints([])
+      setSelectedExistingComplaint(null)
+      navigate('/user/complaints')
+    } catch (error) {
+      toast.error(
+        error.response?.data?.detail ||
+        'Failed to support this complaint.'
+      )
+    } finally {
+      setCheckingExisting(false)
+    }
+  }
+
+
+  /* ─────────────────────────────────────────────
      Submit Complaint
   ───────────────────────────────────────────── */
 
   const handleSubmit = async event => {
-
     event.preventDefault()
 
-    if (loading) return
+    if (loading || checkingExisting) return
 
-    const validationErrors =
-      validate()
+    const validationErrors = validate()
 
-    if (
-      Object.keys(validationErrors).length
-    ) {
-      setErrors(
-        validationErrors
-      )
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors)
       return
     }
 
+    setErrors({})
     setLoading(true)
 
     try {
-
-      const formData =
-        new FormData()
-
-      Object.entries(form).forEach(
-        ([key, value]) => {
-
-          if (
-            value !== '' &&
-            value !== null &&
-            value !== undefined
-          ) {
-            formData.append(
-              key,
-              value
-            )
-          }
-        }
-      )
-
-
-      if (photo?.blob) {
-
-        formData.append(
-          'image',
-          photo.blob,
-          photo.filename ||
-            'photo.jpg'
-        )
-      }
-
-
-      if (photo?.latitude) {
-
-        formData.append(
-          'latitude',
-          photo.latitude
-        )
-
-        formData.append(
-          'longitude',
-          photo.longitude
-        )
-      }
-
-
-      await complaintAPI.create(
-        formData
-      )
-
-      toast.success(
-        'Complaint submitted successfully!'
-      )
-
-      navigate(
-        '/user/complaints'
-      )
-
+      await checkForExistingComplaint()
     } catch (error) {
+      console.error('Complaint submission error:', error)
 
-      const data =
-        error.response?.data
+      const data = error.response?.data
 
-      if (
-        data &&
-        typeof data === 'object'
-      ) {
+      if (data && typeof data === 'object') {
         setErrors(data)
       } else {
-        toast.error(
-          'Submission failed. Please try again.'
-        )
+        toast.error('Submission failed. Please try again.')
       }
-
     } finally {
-
       setLoading(false)
-
     }
   }
 
@@ -1500,62 +1623,87 @@ export default function SubmitComplaint() {
 
                 <label
                   style={{
-                    display: 'flex',
-                    justifyContent:
-                      'space-between',
-                    alignItems: 'center',
+                    display: 'block',
                     fontSize: 11,
                     fontWeight: 700,
                     color: T.tx2,
                     marginBottom: 5,
-                    textTransform:
-                      'uppercase',
+                    textTransform: 'uppercase',
                     letterSpacing: 0.5
                   }}
                 >
-
                   Location *
+                </label>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 8
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    style={{
+                      flex: 1,
+                      background: 'linear-gradient(135deg,#10b981,#059669)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 9,
+                      padding: '9px 10px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📍 Use Current Location
+                  </button>
 
                   <button
                     type="button"
-                    onClick={
-                      useCurrentLocation
-                    }
+                    onClick={() => {
+                      if (
+                        form.latitude !== null &&
+                        form.longitude !== null
+                      ) {
+                        setMapPosition([
+                          form.latitude,
+                          form.longitude
+                        ])
+                      }
+
+                      setMapSearch(form.address || '')
+                      setShowMap(true)
+                    }}
                     style={{
-                      background:
-                        'linear-gradient(135deg,#10b981,#059669)',
+                      flex: 1,
+                      background: 'linear-gradient(135deg,#6366f1,#4f46e5)',
                       color: '#fff',
                       border: 'none',
-                      borderRadius: 6,
-                      padding:
-                        '3px 8px',
-                      fontSize: 10,
+                      borderRadius: 9,
+                      padding: '9px 10px',
+                      fontSize: 11,
                       fontWeight: 700,
-                      cursor:
-                        'pointer'
+                      cursor: 'pointer'
                     }}
                   >
-                    📍 Current Location
+                    🗺️ Select on Map
                   </button>
+                </div>
 
-                </label>
+                
 
-
-                <Input
-                  placeholder="Area / Street / Landmark"
-                  value={
-                    form.location
-                  }
-                  onChange={event =>
-                    set(
-                      'location',
-                      event.target.value
-                    )
-                  }
-                  error={
-                    errors.location
-                  }
-                />
+                {errors.location && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: T.err,
+                      marginTop: 4
+                    }}
+                  >
+                    {errors.location}
+                  </div>
+                )}
 
               </div>
 
@@ -1565,7 +1713,7 @@ export default function SubmitComplaint() {
             {/* Address */}
 
             <Textarea
-              label="Full Address (optional)"
+              label="Full Address *"
               placeholder="Full address for precise location"
               value={form.address}
               onChange={event =>
@@ -1675,7 +1823,7 @@ export default function SubmitComplaint() {
                           fontWeight: 600
                         }}
                       >
-                        Capture Live Photo
+                        Capture Live Photo [Recomended]
                       </div>
 
                       <div
@@ -1735,7 +1883,7 @@ export default function SubmitComplaint() {
                           fontWeight: 600
                         }}
                       >
-                        Upload Image
+                        Upload Image [GPS photo Recomended]
                       </div>
 
                       <div
@@ -2053,7 +2201,7 @@ export default function SubmitComplaint() {
             open: false
           }))
         }
-        title="🤖 AI Department Suggester"
+        title="AI Department Suggester"
         maxWidth={460}
       >
 
@@ -2199,6 +2347,350 @@ export default function SubmitComplaint() {
 
       </Modal>
 
+
+      {/* ─────────────────────────────────────────
+          Existing Complaint Modal
+      ───────────────────────────────────────── */}
+
+      <Modal
+        open={existingComplaints.length > 0}
+        onClose={() => {
+          if (checkingExisting) return
+          setExistingComplaints([])
+          setSelectedExistingComplaint(null)
+        }}
+        title="⚠️ Existing Issue Found"
+        maxWidth={520}
+      >
+        <div
+          style={{
+            background: T.bg3,
+            borderRadius: 10,
+            padding: 14,
+            marginBottom: 16,
+            fontSize: 12,
+            color: T.tx2,
+            lineHeight: 1.5
+          }}
+        >
+          A similar active complaint already exists for the same department
+          and nearby location. You can support that issue instead of creating
+          a another complaint.
+        </div>
+
+        {existingComplaints.map(complaint => (
+          <div
+            key={complaint.id}
+            style={{
+              border: `1px solid ${T.brd}`,
+              borderRadius: 10,
+              padding: 14,
+              marginBottom: 12,
+              background: T.bg
+            }}
+          >
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                marginBottom: 7
+              }}
+            >
+              {complaint.title}
+            </div>
+
+            <div
+              style={{
+                fontSize: 12,
+                color: T.tx2,
+                lineHeight: 1.5,
+                marginBottom: 10
+              }}
+            >
+              {complaint.description}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                flexWrap: 'wrap',
+                marginBottom: 12,
+                fontSize: 11
+              }}
+            >
+              <span style={{ padding: '4px 8px', borderRadius: 6, background: T.bg3, color: T.tx2 }}>
+                Status: {String(complaint.status || '').replace('_', ' ')}
+              </span>
+
+              <span style={{ padding: '4px 8px', borderRadius: 6, background: T.bg3, color: T.tx2 }}>
+                Priority: {complaint.priority || 'medium'}
+              </span>
+
+              {complaint.distance_meters !== undefined && (
+                <span style={{ padding: '4px 8px', borderRadius: 6, background: T.bg3, color: T.tx2 }}>
+                  📍 {complaint.distance_meters}m away
+                </span>
+              )}
+
+              <span style={{ padding: '4px 8px', borderRadius: 6, background: T.bg3, color: T.tx2 }}>
+                {complaint.support_count || 0} supporters
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Button
+                type="button"
+                onClick={() => supportExistingComplaint(complaint.id)}
+                loading={
+                  checkingExisting &&
+                  selectedExistingComplaint === complaint.id
+                }
+                disabled={checkingExisting}
+                style={{ flex: 1, justifyContent: 'center', minWidth: 180 }}
+              >
+                Support This Issue
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                disabled={checkingExisting}
+                onClick={async () => {
+                  // The user explicitly confirmed that this is a different
+                  // issue. Close the modal and create the complaint directly.
+                  setExistingComplaints([])
+                  setSelectedExistingComplaint(null)
+                  setCheckingExisting(true)
+
+                  try {
+                    await createComplaint()
+                  } catch (error) {
+                    console.error('Complaint creation failed:', error)
+                    const data = error.response?.data
+
+                    if (data && typeof data === 'object') {
+                      setErrors(data)
+                    } else {
+                      toast.error('Submission failed. Please try again.')
+                    }
+                  } finally {
+                    setCheckingExisting(false)
+                  }
+                }}
+                style={{ flex: 1, justifyContent: 'center', minWidth: 180 }}
+              >
+                Raise Different Issue
+              </Button>
+            </div>
+          </div>
+        ))}
+      </Modal>
+
+
+      {/* ─────────────────────────────────────────
+          Location Map Modal
+      ───────────────────────────────────────── */}
+
+      {showMap && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,.65)',
+            zIndex: 3000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16
+          }}
+          onClick={event => {
+            if (event.target === event.currentTarget) {
+              setShowMap(false)
+            }
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 850,
+              height: '80vh',
+              background: T.bg,
+              border: `1px solid ${T.brd}`,
+              borderRadius: 14,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 60px rgba(0,0,0,.35)'
+            }}
+          >
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '13px 16px',
+                borderBottom: `1px solid ${T.brd}`
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700
+                }}
+              >
+                Select Complaint Location
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowMap(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: T.tx2,
+                  fontSize: 20,
+                  cursor: 'pointer'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              style={{
+                padding: 12,
+                display: 'flex',
+                gap: 8,
+                borderBottom: `1px solid ${T.brd}`
+              }}
+            >
+              <input
+                value={mapSearch}
+                onChange={event =>
+                  setMapSearch(event.target.value)
+                }
+                onKeyDown={event => {
+                  if (event.key === 'Enter') {
+                    searchMapLocation()
+                  }
+                }}
+                placeholder="Search a location..."
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: `1px solid ${T.brd}`,
+                  background: T.bg3,
+                  color: T.tx,
+                  outline: 'none',
+                  fontSize: 13
+                }}
+              />
+
+              <button
+                type="button"
+                onClick={searchMapLocation}
+                disabled={mapSearchLoading}
+                style={{
+                  padding: '10px 16px',
+                  border: 'none',
+                  borderRadius: 8,
+                  background: 'linear-gradient(135deg,#6366f1,#4f46e5)',
+                  color: '#fff',
+                  fontWeight: 700,
+                  cursor: mapSearchLoading ? 'not-allowed' : 'pointer',
+                  opacity: mapSearchLoading ? 0.7 : 1
+                }}
+              >
+                {mapSearchLoading ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+
+            <div
+              style={{
+                padding: '8px 12px',
+                fontSize: 11,
+                color: T.tx3,
+                borderBottom: `1px solid ${T.brd}`
+              }}
+            >
+              Search for a place or click directly on the map to choose the exact complaint location.
+            </div>
+
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0
+              }}
+            >
+              <MapContainer
+                center={
+                  mapPosition || [20.5937, 78.9629]
+                }
+                zoom={mapPosition ? 16 : 5}
+                style={{
+                  width: '100%',
+                  height: '100%'
+                }}
+              >
+                <TileLayer
+                  attribution='&copy; OpenStreetMap contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+
+                <ComplaintMapViewController
+                  position={mapPosition}
+                />
+
+                <ComplaintMapClickHandler
+                  onSelect={selectMapLocation}
+                />
+
+                {mapPosition && (
+                  <CircleMarker
+                    center={mapPosition}
+                    radius={10}
+                    pathOptions={{
+                      color: '#ffffff',
+                      weight: 3,
+                      fillColor: '#ef4444',
+                      fillOpacity: 1
+                    }}
+                  />
+                )}
+              </MapContainer>
+            </div>
+
+            <div
+              style={{
+                padding: 10,
+                borderTop: `1px solid ${T.brd}`,
+                display: 'flex',
+                justifyContent: 'flex-end'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowMap(false)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  border: `1px solid ${T.brd}`,
+                  background: 'transparent',
+                  color: T.tx2,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* ─────────────────────────────────────────
           Camera Modal
