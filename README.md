@@ -1,6 +1,6 @@
 # IntelliFix : An AI-Driven Smart Public Issue Resolving System 
 <p align="center">
-  <img src="docs/screenshots/logo.png" alt="IntelliFix Logo" width="180">
+  <img src="docs/screenshots/logo.png" alt="IntelliFix Logo" width="400">
 </p>
 
 <p align="center">
@@ -198,11 +198,11 @@ The system provides dedicated functionality for Citizens, Department Administrat
 
 ![User Dashboard](docs/screenshots/user_dashboard.png)
 
-### Submit Complaint
+### Submit Complaint Page
 
 ![Submit Complaint](docs/screenshots/submit_complaint.png)
 
-### AI Department Suggester
+### AI Department Suggester [Chatbot]
 
 ![AI Department Suggester](docs/screenshots/department_suggester.png)
 
@@ -210,7 +210,7 @@ The system provides dedicated functionality for Citizens, Department Administrat
 
 ![Department Dashboard](docs/screenshots/department_dashboard.png)
 
-### Complaint Detail
+### Complaint Detail Page
 
 ![Complaint Detail](docs/screenshots/complaint_detail.png)
 
@@ -235,6 +235,29 @@ The system provides dedicated functionality for Citizens, Department Administrat
 
 ```text
 Intellifix/
+│
+├── ai/
+│   ├── dataset/
+│   │   ├── train/
+│   │   ├── validation/
+│   │   └── test/
+│   │
+│   ├── models/
+│   │   ├── complaint_verifier.keras
+│   │   ├── complaint_verifier_final.keras
+│   │   ├── labels.json
+│   │   └── training_history.pkl
+│   │
+│   ├── notebooks/
+│   │   ├── data_preprocessing.ipynb
+│   │   ├── evaluate_model.ipynb
+│   │   └── train_model.ipynb
+│   │
+│   ├── utils/
+│   ├── train.py
+│   ├── test_model.py
+│   ├── check_dataset.py
+│   └── README.md
 │
 ├── backend/
 │   ├── manage.py
@@ -295,6 +318,20 @@ Intellifix/
 │   ├── Dockerfile
 │   ├── nginx.conf
 │   └── vite.config.js
+│
+├── docs/
+│   └── screenshots/
+│       ├── logo.png
+│       ├── login.png
+│       ├── user_dashboard.png
+│       ├── submit_complaint.png
+│       ├── department_suggester.png
+│       ├── department_dashboard.png
+│       ├── complaint_detail.png
+│       ├── worker_dashboard.png
+│       ├── worker_performance.png
+│       ├── departments.png
+│       └── admin_dashboard.png
 │
 ├── docker-compose.yml
 ├── .gitignore
