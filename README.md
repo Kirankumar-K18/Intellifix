@@ -1,67 +1,300 @@
-# 🔧 IntelliFix — Intelligent Complaint Management & Resolution System
+# IntelliFix : An AI-Driven Smart Public Issue Resolving System 
+<p align="center">
+  <img src="docs/screenshots/logo.png" alt="IntelliFix Logo" width="180">
+</p>
 
-> AI-powered civic complaint management with ML department classification, priority prediction, live camera capture, and role-based dashboards.
+<p align="center">
+  <strong>An AI-powered civic complaint management platform for intelligent issue classification, priority prediction, complaint tracking, community support, and role-based resolution.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Django-4.2-green" alt="Django">
+  <img src="https://img.shields.io/badge/Python-3.11-blue" alt="Python">
+  <img src="https://img.shields.io/badge/React-18-blue" alt="React">
+  <img src="https://img.shields.io/badge/MySQL-8.0-blue" alt="MySQL">
+  <img src="https://img.shields.io/badge/AI%2FML-TF--IDF%20%7C%20Random%20Forest-orange" alt="AI ML">
+  <img src="https://img.shields.io/badge/Auth-JWT-purple" alt="JWT">
+  <img src="https://img.shields.io/badge/Deployment-Docker-blue" alt="Docker">
+</p>
 
 ---
 
-## 🏗️ Tech Stack
+## Project
 
-| Layer       | Technology                                           |
-|-------------|------------------------------------------------------|
-| Frontend    | React 18 + Vite + React Router v6 + Recharts         |
-| Backend     | Django 4.2 + Django REST Framework                   |
-| Database    | **MySQL 8.0**                                        |
-| Auth        | JWT (djangorestframework-simplejwt)                  |
-| ML Model 1  | TF-IDF + Logistic Regression (Department Classifier) |
-| ML Model 2  | Random Forest (Priority Predictor)                   |
-| Deployment  | Docker + Docker Compose + Nginx                      |
+**GitHub Repository:** https://github.com/Kirankumar-K18/Intellifix
+
+**Current Release:** `v1.0.1`
 
 ---
 
-## 📁 Project Structure
+## Overview
 
-```
-INTELLIFIX/
+IntelliFix is an intelligent civic complaint management and resolution system designed to streamline the process of reporting, classifying, prioritizing, assigning, tracking, and resolving public complaints.
+
+The platform allows citizens to submit civic issues such as potholes, waste management problems, water and drainage issues, electrical problems, and other public infrastructure concerns.
+
+IntelliFix integrates Artificial Intelligence and Machine Learning to assist with department classification and complaint priority prediction. It also provides community-based complaint support, location-based existing complaint detection, real-time complaint updates, notifications, analytics, and role-based dashboards.
+
+The system provides dedicated functionality for Citizens, Department Administrators, Workers, and System Administrators.
+
+---
+
+## Key Features
+
+### Authentication & Security
+
+* JWT-based authentication
+* Access and refresh token workflow
+* Automatic JWT token refresh
+* Role-Based Access Control (RBAC)
+* Custom Django User Model
+* Secure login and logout
+* Password change functionality
+* Protected API endpoints
+* Role-based complaint access
+
+### Complaint Management
+
+* Civic complaint submission
+* Complaint title and description
+* Complaint image upload
+* Complaint location and address
+* Latitude and longitude storage
+* Complaint severity selection
+* Population affected tracking
+* Complaint status management
+* Complaint assignment to workers
+* Complaint resolution tracking
+* Complaint history and timeline
+
+### AI-Powered Classification
+
+* AI-based department suggestion
+* Text-based complaint classification
+* Top department predictions
+* Confidence-based suggestions
+* TF-IDF feature extraction
+* Logistic Regression classification model
+
+### Intelligent Priority Prediction
+
+* Machine Learning-based priority prediction
+* Random Forest classification
+* Severity-based analysis
+* Population impact analysis
+* Complaint frequency analysis
+* Image verification factor
+* Priority score calculation
+* Low, Medium, High, and Critical priority levels
+
+### Existing Complaint Detection
+
+* Detects potentially duplicate complaints
+* Location-based matching
+* 30-meter physical location radius
+* Department-based filtering
+* Complaint title and description similarity
+* Active complaint filtering
+* Existing complaint support option
+
+### Community Complaint Support
+
+* Citizens can support existing complaints
+* Prevents duplicate support from the same user
+* Complaint owners cannot support their own complaint
+* Support count tracking
+* Automatic priority recalculation
+* Support removal functionality
+* Worker and department administrator notifications
+
+### Live Camera & Location Capture
+
+* Device camera integration
+* Live complaint image capture
+* Timestamp watermark on captured images
+* GPS location capture
+* High-accuracy geolocation
+* Latitude and longitude storage
+* Photo timestamp tracking
+* Complaint image verification workflow
+
+### Notifications
+
+* In-app notifications
+* Complaint assignment notifications
+* Complaint support notifications
+* Feedback notifications
+* Status-related notifications
+* Unread notification count
+* Mark notification as read
+* Mark all notifications as read
+* Email notification support
+
+### Analytics
+
+* Role-scoped analytics
+* Complaint statistics
+* Department analytics
+* Priority analysis
+* Complaint status statistics
+* Worker performance information
+* Recent activity monitoring
+* Complaint map visualization
+* Worker performance reports
+
+### Feedback & Resolution
+
+* Feedback submission for complaints
+* 1–5 rating system
+* Feedback comments
+* Resolved complaint feedback
+* Worker feedback notifications
+* Complaint resolution tracking
+
+---
+
+## User Roles
+
+| Role | Responsibilities |
+| --- | --- |
+| Admin | Manage users, departments, complaints, analytics, and overall system operations |
+| Department Admin | Manage department complaints, assignments, statuses, analytics, and escalation |
+| Worker | View and update complaints assigned to them and manage resolution |
+| Citizen | Submit complaints, track complaints, support existing complaints, and provide feedback |
+
+---
+
+## Technology Stack
+
+| Category | Technology |
+| --- | --- |
+| Frontend | React 18 |
+| Build Tool | Vite |
+| Routing | React Router v6 |
+| Charts | Recharts |
+| Backend | Django 4.2 |
+| API Framework | Django REST Framework |
+| Language | Python 3.11 |
+| Database | MySQL 8.0 |
+| Authentication | JWT |
+| Machine Learning | Scikit-learn |
+| Department Model | TF-IDF + Logistic Regression |
+| Priority Model | Random Forest |
+| API Client | Axios |
+| Notifications | Django Notifications + Email |
+| Containerization | Docker |
+| Web Server | Nginx |
+| Version Control | Git & GitHub |
+
+---
+
+## Application Screenshots
+
+### Login Page
+
+![Login Page](docs/screenshots/login.png)
+
+### User Dashboard
+
+![User Dashboard](docs/screenshots/user_dashboard.png)
+
+### Submit Complaint
+
+![Submit Complaint](docs/screenshots/submit_complaint.png)
+
+### AI Department Suggester
+
+![AI Department Suggester](docs/screenshots/department_suggester.png)
+
+### Department Dashboard
+
+![Department Dashboard](docs/screenshots/department_dashboard.png)
+
+### Complaint Detail
+
+![Complaint Detail](docs/screenshots/complaint_detail.png)
+
+### Worker Dashboard
+
+![Worker Dashboard](docs/screenshots/worker_dashboard.png)
+
+### Worker Performance
+
+![Worker Performance](docs/screenshots/worker_performance.png)
+
+### Departments Management
+
+![Departments Management](docs/screenshots/departments.png)
+
+### Admin Dashboard
+
+![Admin Dashboard](docs/screenshots/admin_dashboard.png)
+---
+
+## Project Structure
+
+```text
+Intellifix/
+│
 ├── backend/
 │   ├── manage.py
 │   ├── requirements.txt
 │   ├── Dockerfile
+│   │
 │   ├── intellifix_project/
-│   │   ├── settings.py          ← MySQL + JWT + CORS config
+│   │   ├── settings.py
 │   │   ├── urls.py
-│   │   └── wsgi.py
+│   │   ├── wsgi.py
+│   │   └── asgi.py
+│   │
 │   ├── apps/
-│   │   ├── users/               ← Custom User model (citizen/department/admin)
-│   │   ├── complaints/          ← Complaint + Feedback + Timeline
-│   │   ├── departments/         ← Department model + stats
-│   │   ├── analytics/           ← Role-scoped analytics API
-│   │   ├── notifications/       ← In-app + email notifications
-│   │   └── chatbot/             ← ML department suggestion + priority prediction
+│   │   ├── users/
+│   │   │   └── # User authentication and management
+│   │   │
+│   │   ├── complaints/
+│   │   │   └── # Complaint management, support and feedback
+│   │   │
+│   │   ├── departments/
+│   │   │   └── # Department management
+│   │   │
+│   │   ├── analytics/
+│   │   │   └── # Analytics and reporting
+│   │   │
+│   │   ├── notifications/
+│   │   │   └── # In-app and email notifications
+│   │   │
+│   │   └── chatbot/
+│   │       └── # AI/ML prediction APIs
+│   │
 │   ├── ml/
-│   │   ├── train.py             ← Train both ML models (run once)
-│   │   ├── predictor.py         ← Inference: department + priority
-│   │   └── saved_models/        ← .pkl files (created after training)
-│   └── media/                   ← Uploaded complaint images
+│   │   ├── train.py
+│   │   ├── predictor.py
+│   │   └── saved_models/
+│   │
+│   └── media/
+│       └── # Uploaded complaint images
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx              ← Router + Auth guard
-│   │   ├── main.jsx             ← Entry point
-│   │   ├── index.css            ← Global styles
 │   │   ├── components/
-│   │   │   └── common/UI.jsx    ← Shared UI: Layout, Table, Modal, Badge, etc.
+│   │   ├── context/
 │   │   ├── pages/
-│   │   │   ├── LoginPage.jsx
-│   │   │   ├── RegisterPage.jsx
-│   │   │   ├── user/            ← Dashboard, Submit, My Complaints, Detail
-│   │   │   ├── department/      ← Dashboard, Complaints, Detail, Analytics
-│   │   │   └── admin/           ← Dashboard, Users, Departments, Complaints, Analytics
-│   │   ├── services/api.js      ← Axios client with JWT auto-refresh
-│   │   └── context/AuthContext.jsx
+│   │   │   ├── user/
+│   │   │   ├── department/
+│   │   │   ├── admin/
+│   │   │   └── worker/
+│   │   │
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   │
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   │
+│   ├── package.json
 │   ├── Dockerfile
 │   ├── nginx.conf
-│   ├── vite.config.js
-│   └── package.json
+│   └── vite.config.js
 │
 ├── docker-compose.yml
 ├── .gitignore
@@ -70,233 +303,623 @@ INTELLIFIX/
 
 ---
 
-## 🚀 Quick Start
+## Key Highlights
 
-### Option A — Docker (Recommended, zero setup)
-
-```bash
-# 1. Clone the project
-git clone <repo-url>
-cd INTELLIFIX
-
-# 2. Start everything (MySQL + Django + React + Nginx)
-docker compose up --build
-
-# 3. Open browser
-#    Frontend:  http://localhost:3000
-#    API:       http://localhost:8000/api
-#    Django Admin: http://localhost:8000/admin
-```
-
-Docker automatically:
-- Starts MySQL and waits until healthy
-- Runs migrations
-- Seeds departments and demo users
-- Trains ML models
-- Builds and serves the React app via Nginx
+- AI-assisted civic complaint classification
+- Machine Learning-based complaint priority prediction
+- Location-aware duplicate complaint detection
+- Community-driven complaint support
+- Live camera capture with timestamp
+- GPS-based complaint location tracking
+- Role-based dashboards
+- Worker assignment and complaint resolution workflow
+- Department-specific complaint management
+- Complaint escalation mechanism
+- In-app and email notifications
+- Complaint analytics and map visualization
+- JWT authentication with automatic token refresh
+- MySQL database integration
+- Docker-based application setup
 
 ---
 
-### Option B — Manual Local Setup
+## Artificial Intelligence & Machine Learning
 
-#### Prerequisites
-- Python 3.11+
-- Node.js 20+
-- MySQL 8.0 running locally
+### Department Classification
 
-#### Backend
+IntelliFix uses a text classification pipeline to suggest the most appropriate department for a submitted complaint.
 
-```bash
-cd backend
+**Algorithm:**
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create MySQL database
-mysql -u root -p
-> CREATE DATABASE intellifix_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-> CREATE USER 'intellifix_user'@'localhost' IDENTIFIED BY 'intellifix_pass';
-> GRANT ALL PRIVILEGES ON intellifix_db.* TO 'intellifix_user'@'localhost';
-> FLUSH PRIVILEGES;
-> EXIT;
-
-# Set environment variables (or create .env file)
-export DB_NAME=intellifix_db
-export DB_USER=intellifix_user
-export DB_PASSWORD=intellifix_pass
-export DB_HOST=localhost
-
-# Run migrations
-python manage.py migrate
-
-# Seed initial data
-python manage.py seed_data
-
-# Train ML models
-python ml/train.py
-
-# Start development server
-python manage.py runserver
+```text
+Complaint Description
+        ↓
+TF-IDF Vectorizer
+        ↓
+Logistic Regression
+        ↓
+Department Prediction
+        ↓
+Top Department Suggestions
 ```
 
-#### Frontend
+The model analyses the complaint description and generates department suggestions with confidence scores.
 
-```bash
-cd frontend
-npm install
-npm run dev          # Starts on http://localhost:3000
+**Endpoint:**
+
+```text
+POST /api/chatbot/suggest/
+```
+
+**Example Input:**
+
+```json
+{
+  "description": "There is a large pothole on the main road."
+}
+```
+
+### Priority Prediction
+
+IntelliFix uses a Random Forest model to assist in determining complaint priority.
+
+The prediction considers factors such as:
+
+- Severity
+- Population affected
+- Complaint frequency
+- Image availability
+- Complaint characteristics
+
+**Endpoint:**
+
+```text
+POST /api/chatbot/predict-priority/
+```
+
+The system classifies complaints into:
+
+- Low
+- Medium
+- High
+- Critical
+
+In addition to ML prediction, complaint priority can be recalculated when community support changes.
+
+---
+
+## Existing Complaint Detection
+
+Before creating a new complaint, IntelliFix checks whether a similar active complaint already exists.
+
+The system compares:
+
+- Department
+- Geographic location
+- Complaint title
+- Complaint description
+
+Complaints within a **30-meter radius** are considered candidates for the same physical location.
+
+Text similarity is then used to determine whether the complaints describe a similar issue.
+
+```text
+New Complaint
+      │
+      ▼
+Department Check
+      │
+      ▼
+Location Check
+      │
+      ▼
+30-Meter Radius
+      │
+      ▼
+Text Similarity
+      │
+      ▼
+Existing Complaint?
+     / \
+   Yes  No
+    │    │
+    ▼    ▼
+ Support Create New
+ Existing Complaint
+```
+
+**Endpoint:**
+
+```text
+POST /api/complaints/check-existing/
 ```
 
 ---
 
-## 🔑 Test Credentials
+## Community Support
 
-| Role              | Email                     | Password       |
-|-------------------|---------------------------|----------------|
-| Admin             | admin@intellifix.com      | Admin@1234     |
-| Department Official | ramesh@intellifix.com   | Official@1234  |
-| Citizen           | ravi@example.com          | User@1234      |
+Citizens can support an existing complaint instead of submitting another complaint for the same issue.
 
----
+The support workflow is:
 
-## 🤖 ML Models
-
-### Model 1 — Department Classifier
-
-- **Algorithm:** TF-IDF Vectorizer + Logistic Regression
-- **Training data:** 100 labeled complaint samples across 9 departments
-- **Endpoint:** `POST /api/chatbot/suggest/`
-- **Input:** `{ "description": "There is a pothole on MG Road..." }`
-- **Output:** Top-3 department suggestions with confidence scores
-
-### Model 2 — Priority Predictor
-
-- **Algorithm:** Random Forest Classifier (150 trees)
-- **Training data:** 3000 synthetic samples
-- **Input features:**
-  - `severity` (1–5)
-  - `population_affected` (integer)
-  - `frequency` (count of similar complaints)
-  - `has_image` (boolean)
-- **Priority formula:**
-  - 40% Severity (keyword boost + user rating)
-  - 20% Population Impact (log-scale)
-  - 20% Complaint Frequency
-  - 20% Image Verification
-- **Output:** `low` | `medium` | `high` | `critical`
-- **Endpoint:** `POST /api/chatbot/predict-priority/`
-
----
-
-## 📡 API Reference
-
-### Auth
+```text
+Existing Complaint
+        ↓
+Citizen Supports
+        ↓
+Support Count Increases
+        ↓
+Priority Recalculated
+        ↓
+Worker / Department Notification
 ```
-POST /api/auth/login/            → { access, refresh, user }
-POST /api/auth/register/         → Register citizen
-GET  /api/auth/profile/          → Current user profile
-PATCH /api/auth/profile/         → Update profile
-GET  /api/auth/users/            → List all users (admin)
-POST /api/auth/logout/           → Blacklist refresh token
+
+Each citizen can support a complaint only once.
+
+**Support Endpoint:**
+
+```text
+POST /api/complaints/{id}/support/
+```
+
+**Remove Support:**
+
+```text
+DELETE /api/complaints/{id}/support/remove/
+```
+
+---
+
+## Live Camera Capture
+
+The complaint submission module supports live camera capture using browser camera APIs.
+
+The workflow includes:
+
+- Device camera access
+- Live video preview
+- Image capture
+- Timestamp watermark
+- GPS coordinate retrieval
+- Image upload
+- Complaint location storage
+
+The system stores:
+
+```text
+latitude
+longitude
+photo_timestamp
+photo_captured
+```
+
+This provides additional evidence and location context for submitted complaints.
+
+---
+
+## API Reference
+
+### Authentication
+
+```text
+POST   /api/auth/login/
+POST   /api/auth/register/
+POST   /api/auth/logout/
+GET    /api/auth/profile/
+PATCH  /api/auth/profile/
+PUT    /api/auth/change-password/
+GET    /api/auth/users/
+GET    /api/auth/users/{id}/
 ```
 
 ### Complaints
+
+```text
+GET    /api/complaints/
+POST   /api/complaints/
+GET    /api/complaints/mine/
+GET    /api/complaints/{id}/
+PATCH  /api/complaints/{id}/
+DELETE /api/complaints/{id}/
 ```
-GET    /api/complaints/                → List (role-filtered, sorted by priority_score)
-POST   /api/complaints/               → Submit complaint (multipart/form-data)
-GET    /api/complaints/mine/           → Citizen's own complaints
-GET    /api/complaints/{id}/           → Complaint detail
-PATCH  /api/complaints/{id}/           → Update status (department/admin)
-GET    /api/complaints/feedback/       → List feedback
-POST   /api/complaints/feedback/add/   → Submit rating (resolved only)
+
+### Existing Complaint Detection
+
+```text
+POST   /api/complaints/check-existing/
+```
+
+### Community Support
+
+```text
+POST   /api/complaints/{id}/support/
+DELETE /api/complaints/{id}/support/remove/
+```
+
+### Feedback
+
+```text
+GET    /api/complaints/feedback/
+POST   /api/complaints/feedback/add/
 ```
 
 ### Analytics
-```
-GET /api/analytics/                → Role-scoped overview stats
-GET /api/analytics/department/     → Department-specific analytics
+
+```text
+GET    /api/analytics/
+GET    /api/analytics/department/
+GET    /api/analytics/recent-activity/
+GET    /api/analytics/export-workers-pdf/
 ```
 
-### Chatbot / ML
-```
-POST /api/chatbot/suggest/         → Department suggestion from description
-POST /api/chatbot/predict-priority/ → Priority prediction
+### AI / ML
+
+```text
+POST   /api/chatbot/suggest/
+POST   /api/chatbot/predict-priority/
 ```
 
 ### Notifications
+
+```text
+GET    /api/notifications/
+GET    /api/notifications/unread-count/
+POST   /api/notifications/{id}/read/
+POST   /api/notifications/mark-all-read/
 ```
-GET  /api/notifications/           → All user notifications
-GET  /api/notifications/unread-count/
-POST /api/notifications/mark-all-read/
-POST /api/notifications/{id}/read/
+
+### Complaint Map
+
+```text
+GET    /api/complaints/map/
 ```
 
----
+### Escalation
 
-## 👥 Role Permissions
-
-| Feature                    | Citizen | Department | Admin |
-|----------------------------|:-------:|:----------:|:-----:|
-| Submit complaint            | ✅      | ❌         | ❌    |
-| View own complaints         | ✅      | ❌         | ✅    |
-| View dept complaints        | ❌      | ✅         | ✅    |
-| Update complaint status     | ❌      | ✅         | ✅    |
-| Rate resolved complaint     | ✅      | ❌         | ❌    |
-| View dept analytics         | ❌      | ✅         | ✅    |
-| View all analytics          | ❌      | ❌         | ✅    |
-| Manage users                | ❌      | ❌         | ✅    |
-| Manage departments          | ❌      | ❌         | ✅    |
-| Use AI chatbot              | ✅      | ✅         | ✅    |
-
----
-
-## 📸 Live Camera Capture
-
-- Opens device camera via `MediaDevices.getUserMedia()`
-- **Camera always mounted** (CSS visibility, not conditional rendering — fixes capture bug)
-- Stable `useRef()` hooks ensure video/canvas refs never become null
-- Draws timestamp watermark on captured frame
-- Fetches GPS via `Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 })`
-- Saves file as `username_YYYYMMDD_HHmmss.jpg` (e.g. `ravi_20260610_143522.jpg`)
-- Stores `latitude`, `longitude`, `photo_timestamp` in Complaint model
-- Shows GPS coordinates with Google Maps link in complaint detail
-
----
-
-## 🗄️ Database Schema (MySQL)
-
-```sql
--- Core tables
-users           (id, email, name, phone, role, department_id, avatar, is_active)
-departments     (id, name, description, email, phone, icon, is_active)
-complaints      (id, title, description, location, address, image,
-                 severity, population_affected, priority, priority_score,
-                 ai_department_suggestion, status, user_id, department_id,
-                 assigned_to_id, latitude, longitude, photo_timestamp,
-                 photo_captured, created_at, updated_at, resolved_at)
-complaint_updates (id, complaint_id, updated_by_id, old_status, new_status, note, created_at)
-feedback        (id, complaint_id, user_id, rating, comment, created_at)
-notifications   (id, user_id, complaint_id, type, title, message, is_read, created_at)
+```text
+POST   /api/complaints/run-escalation/
 ```
 
 ---
 
-## 🔧 Environment Variables
+## Database Design
 
-| Variable         | Default               | Description              |
-|------------------|-----------------------|--------------------------|
-| `SECRET_KEY`     | (insecure default)    | Django secret key        |
-| `DEBUG`          | `True`                | Debug mode               |
-| `DB_NAME`        | `intellifix_db`       | MySQL database name      |
-| `DB_USER`        | `intellifix_user`     | MySQL username           |
-| `DB_PASSWORD`    | `intellifix_pass`     | MySQL password           |
-| `DB_HOST`        | `localhost`           | MySQL host               |
-| `DB_PORT`        | `3306`                | MySQL port               |
-| `EMAIL_HOST`     | `smtp.gmail.com`      | SMTP server              |
-| `EMAIL_HOST_USER`| ``                    | Email address            |
-| `EMAIL_HOST_PASSWORD` | ``               | Email app password       |
-| `VITE_API_URL`   | `http://localhost:8000/api` | Frontend API URL   |
+The system uses **MySQL** as its primary relational database.
+
+### Core Entities
+
+```text
+users
+    │
+    ├── complaints
+    │       │
+    │       ├── complaint_updates
+    │       ├── feedback
+    │       ├── complaint_support
+    │       └── notifications
+    │
+    └── departments
+```
+
+### Main Tables
+
+```text
+users
+departments
+complaints
+complaint_updates
+complaint_support
+feedback
+notifications
+```
+
+### Complaint Data
+
+```text
+complaints
+├── id
+├── title
+├── description
+├── location
+├── address
+├── latitude
+├── longitude
+├── image
+├── severity
+├── population_affected
+├── population_score
+├── frequency_score
+├── priority
+├── priority_score
+├── ai_department_suggestion
+├── status
+├── user_id
+├── department_id
+├── assigned_to_id
+├── photo_timestamp
+├── photo_captured
+├── is_image_verified
+├── manual_review
+├── is_escalated
+├── resolved_at
+├── created_at
+└── updated_at
+```
+
+---
+
+## Security
+
+IntelliFix implements multiple security mechanisms to protect users and system resources.
+
+- JWT authentication
+- Access and refresh tokens
+- Automatic token refresh
+- Role-Based Access Control
+- Protected REST API endpoints
+- Object-level complaint permissions
+- Department-level access restrictions
+- Worker assignment restrictions
+- Django ORM protection against SQL injection
+- Secure password hashing
+- Authentication-protected complaint operations
+
+---
+
+## Local Installation
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 20+
+- MySQL 8.0
+- Git
+- Docker (optional)
+
+### Clone Repository
+
+```bash
+git clone https://github.com/Kirankumar-K18/Intellifix.git
+
+cd Intellifix
+```
+
+### Backend Setup
+
+```bash
+cd backend
+```
+
+Create a virtual environment.
+
+#### Windows
+
+```bash
+python -m venv venv
+
+venv\Scripts\activate
+```
+
+#### Linux / macOS
+
+```bash
+python3 -m venv venv
+
+source venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Configure the MySQL database and required environment variables.
+
+Run migrations:
+
+```bash
+python manage.py migrate
+```
+
+Train the ML models:
+
+```bash
+python ml/train.py
+```
+
+Start the backend:
+
+```bash
+python manage.py runserver
+```
+
+Backend API:
+
+```text
+http://127.0.0.1:8000/api/
+```
+
+Django Admin:
+
+```text
+http://127.0.0.1:8000/admin/
+```
+
+### Frontend Setup
+
+Open a new terminal:
+
+```bash
+cd frontend
+
+npm install
+
+npm run dev
+```
+
+The frontend will be available at:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## Docker Deployment
+
+IntelliFix includes Docker configuration for running the application using containerized services.
+
+```bash
+docker compose up --build
+```
+
+The Docker environment is designed to run:
+
+```text
+MySQL
+  ↓
+Django Backend
+  ↓
+React Frontend
+  ↓
+Nginx
+```
+
+---
+
+## Environment Variables
+
+Create the required environment configuration according to your local or production setup.
+
+```env
+SECRET_KEY=your-secret-key
+
+DEBUG=True
+
+DB_NAME=intellifix_db
+DB_USER=intellifix_user
+DB_PASSWORD=your-database-password
+DB_HOST=localhost
+DB_PORT=3306
+
+EMAIL_HOST=smtp.gmail.com
+EMAIL_HOST_USER=your-email
+EMAIL_HOST_PASSWORD=your-app-password
+
+VITE_API_URL=http://localhost:8000/api
+```
+
+> **Security:** Do not commit credentials, API keys, passwords, or secret environment files to GitHub.
+
+---
+
+## Complaint Resolution Workflow
+
+```text
+Citizen
+   │
+   ▼
+Submit Complaint
+   │
+   ├── Image
+   ├── Description
+   ├── Location
+   └── Severity
+   │
+   ▼
+AI Department Suggestion
+   │
+   ▼
+Existing Complaint Check
+   │
+   ├── Existing → Support Complaint
+   │
+   └── New → Create Complaint
+              │
+              ▼
+       Priority Prediction
+              │
+              ▼
+       Department Assignment
+              │
+              ▼
+        Worker Assignment
+              │
+              ▼
+         In Progress
+              │
+              ▼
+           Resolved
+              │
+              ▼
+           Feedback
+```
+
+---
+
+## Priority Management
+
+Complaint priority is influenced by multiple factors including:
+
+- Severity
+- Population affected
+- Complaint frequency
+- Image verification
+- Community support
+
+The system calculates a priority score and categorizes complaints as:
+
+| Priority | Score Range |
+|----------|-------------|
+| Critical | 4.5 – 5.0 |
+| High | 3.5 – 4.49 |
+| Medium | 2.5 – 3.49 |
+| Low | Below 2.5 |
+
+Community support can increase the priority score of an existing complaint, helping frequently reported public issues receive greater attention.
+
+---
+
+## Future Enhancements
+
+- Advanced AI-based complaint similarity detection
+- Improved duplicate complaint clustering
+- Computer Vision-based image verification
+- Real-time WebSocket notifications
+- Mobile application
+- Advanced GIS-based complaint visualization
+- Predictive maintenance analytics
+- Automated complaint routing
+- Multi-language complaint support
+- Advanced citizen engagement analytics
+- Cloud production deployment
+- Automated report generation
+
+---
+
+## Project Status
+
+**Current Status:** Working Prototype / v1.0.1
+
+The current version includes the core complaint submission, AI/ML assistance, complaint management, existing complaint detection, community support, role-based access, notifications, analytics, and resolution workflow.
+
+---
+
+## Author
+
+**Kirankumar K**
+
+Computer Science and Data Science Engineering
+
+RNS Institute of Technology
+
+**GitHub:** https://github.com/Kirankumar-K18
+
+**Repository:** https://github.com/Kirankumar-K18/Intellifix
+
+---
+
+## License
+
+This project is developed for educational and academic purposes.
