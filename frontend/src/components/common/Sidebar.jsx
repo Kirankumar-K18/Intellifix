@@ -6,37 +6,49 @@ import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { notifAPI } from "../../services/api";
 import logo from "../../assets/intellifix-logo.png";
+import {
+  Home,
+  Plus,
+  ClipboardList,
+  HelpCircle,
+  Users,
+  Building2,
+  Map,
+  BarChart3,
+  Wrench,
+  Star,
+} from "lucide-react";
 
 const NAV_LINKS = {
   citizen: [
-    { to: "/user", label: "Dashboard", icon: "🏠" },
-    { to: "/user/submit", label: "Submit Complaint", icon: "➕" },
-    { to: "/user/complaints", label: "My Complaints", icon: "📋" },
-    { to: "/help", label: "Help & Support", icon: "?" },
+    { to: "/user", label: "Dashboard", icon: Home },
+    { to: "/user/submit", label: "Submit Complaint", icon: Plus },
+    { to: "/user/complaints", label: "My Complaints", icon: ClipboardList },
+    { to: "/help", label: "Help & Support", icon: HelpCircle },
   ],
 
   department_admin: [
-    { to: "/department", label: "Dashboard", icon: "🏠" },
-    { to: "/department/complaints", label: "Complaints", icon: "📋" },
-    { to: "/department/workers", label: "Workers", icon: "👷" },
-    { to: "/department/map", label: "Map", icon: "🗺️" },
-    { to: "/department/analytics", label: "Analytics", icon: "📈" },
-    { to: "/help", label: "Help & Support", icon: "?" },
+    { to: "/department", label: "Dashboard", icon: Home },
+    { to: "/department/complaints", label: "Complaints", icon: ClipboardList },
+    { to: "/department/workers", label: "Workers", icon: Users },
+    { to: "/department/map", label: "Map", icon: Map },
+    { to: "/department/analytics", label: "Analytics", icon: BarChart3 },
+    { to: "/help", label: "Help & Support", icon: HelpCircle },
   ],
 
   worker: [
-    { to: "/department", label: "Dashboard", icon: "🏠" },
-    { to: "/department/complaints", label: "Assigned", icon: "🛠️" },
-    { to: "/worker/performance", label: "Performance", icon: "⭐" },
-    { to: "/help", label: "Help & Support", icon: "?" },
+    { to: "/department", label: "Dashboard", icon: Home },
+    { to: "/department/complaints", label: "Assigned", icon: Wrench },
+    { to: "/worker/performance", label: "Performance", icon: Star },
+    { to: "/help", label: "Help & Support", icon: HelpCircle },
   ],
 
   admin: [
-    { to: "/admin", label: "Dashboard", icon: "🏠" },
-    { to: "/admin/users", label: "Users", icon: "👥" },
-    { to: "/admin/departments", label: "Departments", icon: "🏢" },
-    { to: "/admin/complaints", label: "Complaints", icon: "📋" },
-    { to: "/admin/analytics", label: "Analytics", icon: "📈" },
+    { to: "/admin", label: "Dashboard", icon: Home },
+    { to: "/admin/users", label: "Users", icon: Users },
+    { to: "/admin/departments", label: "Departments", icon: Building2 },
+    { to: "/admin/complaints", label: "Complaints", icon: ClipboardList },
+    { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   ],
 };
 
@@ -181,13 +193,15 @@ e.currentTarget.style.color="rgba(255,255,255,.72)";
 >
 
 <span
-style={{
-width:22,
-textAlign:"center",
-fontSize:18
-}}
+  style={{
+    width:22,
+    display:"flex",
+    alignItems:"center",
+    justifyContent:"center",
+    color:"#fff"
+  }}
 >
-{link.icon}
+  <link.icon size={19} strokeWidth={2} />
 </span>
 
 <span
