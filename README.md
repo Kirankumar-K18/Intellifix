@@ -424,7 +424,37 @@ The system classifies complaints into:
 In addition to ML prediction, complaint priority can be recalculated when community support changes.
 
 ---
+## Image Verification Model Results
+### Dataset and Model Configuration
 
+| Parameter | Details |
+|---|---|
+| **Dataset** | IntelliFix Image Dataset |
+| **Task** | Binary Image Classification |
+| **Classes** | Relevant, Irrelevant |
+| **Total Images** | 33,311 |
+| **Training Images** | 27,729 |
+| **Validation Images** | 1,612 |
+| **Testing Images** | 3,970 |
+| **Train–Validation–Test Split** | 80% – 5% – 15% |
+| **Model** | MobileNetV2 |
+| **Input Image Size** | 224 × 224 × 3 |
+| **Transfer Learning** | Yes |
+| **Pretrained Weights** | ImageNet |
+
+### Model Performance
+
+| Metric | Result |
+|---|---:|
+| **Test Accuracy** | **98.41%** |
+| **Test Loss** | **0.0498** |
+### Evaluation Command
+
+```bash
+cd ai
+python test_model.py
+```
+---
 ## Existing Complaint Detection
 
 Before creating a new complaint, IntelliFix checks whether a similar active complaint already exists.
