@@ -1319,7 +1319,7 @@ export default function SubmitComplaint() {
       console.error('Existing complaint check failed:', error)
 
       toast.error(
-        'Could not check existing complaints. Continuing with submission.'
+        'Image validation or duplicate check failed. Please ensure the image is clear and try again if necessary.'
       )
 
       await createComplaint()
