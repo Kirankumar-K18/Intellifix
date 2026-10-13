@@ -243,3 +243,238 @@ transform:none;
     color:#2563EB;
 
 }
+/* Mobile Responsive */
+@media screen and (max-width: 768px) {
+    .login-page {
+        min-height: 100vh;
+        min-height: 100dvh;
+        width: 100%;
+        padding: 20px 15px;
+        box-sizing: border-box;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        background-image: none;
+        background-color: #f4f5f9;
+    }
+
+    .login-left {
+        display: none;
+    }
+
+    .login-right {
+        flex: none;
+        width: 100%;
+        max-width: 430px;
+        padding: 0;
+        margin: 0 auto;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 430px;
+        padding: 25px 20px;
+        box-sizing: border-box;
+        margin: 0;
+
+        background: #ffffff;
+    }
+
+    .login-card h2 {
+        font-size: 27px;
+        line-height: 1.3;
+    }
+
+    .login-card input {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .login-options {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 13px;
+    }
+
+    .login-card button {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .password-group {
+        width: 100%;
+    }
+}
+
+/* Small Mobile Screens */
+@media screen and (max-width: 380px) {
+    .login-page {
+        padding: 15px 10px;
+        justify-content: flex-start;
+    }
+
+    .login-card {
+        padding: 22px 16px;
+    }
+
+    .login-card h2 {
+        font-size: 24px;
+    }
+
+    .login-subtitle {
+        font-size: 13px;
+    }
+
+    .login-options {
+        font-size: 12px;
+    }
+
+    .login-register {
+        font-size: 13px;
+    }
+}
+/* Mobile Height & Spacing */
+@media screen and (max-width: 768px) {
+    .login-page,
+    .signup-page {
+        min-height: 100vh;
+        min-height: 100dvh;
+        height: auto;
+        padding: 20px 15px;
+        box-sizing: border-box;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        background-image: none;
+        background-color: #f4f5f9;
+    }
+
+    .login-left {
+        display: none;
+    }
+
+    .login-right {
+        flex: none;
+        width: 100%;
+        max-width: 430px;
+        padding: 0;
+    }
+
+    .login-card,
+    .signup-card {
+        width: 100%;
+        max-width: 430px;
+        height: auto;
+        min-height: unset;
+        max-height: none;
+        margin: 0 auto;
+        padding: 25px 20px;
+        box-sizing: border-box;
+        background: #ffffff;
+    }
+
+    .login-card h2,
+    .signup-card h1,
+    .signup-card h2 {
+        font-size: 27px;
+        margin-top: 0;
+    }
+
+    .login-card input,
+    .signup-card input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .login-card button,
+    .signup-card button {
+        width: 100%;
+    }
+}
+
+/* Small Mobile Screens */
+@media screen and (max-width: 480px) {
+    .login-page,
+    .signup-page {
+        padding: 16px 12px;
+        justify-content: center;
+    }
+
+    .login-card,
+    .signup-card {
+        padding: 22px 18px;
+        border-radius: 20px;
+    }
+
+    .login-card h2,
+    .signup-card h1,
+    .signup-card h2 {
+        font-size: 25px;
+        line-height: 1.3;
+    }
+
+    .login-card p,
+    .signup-card p {
+        margin-bottom: 18px;
+    }
+
+    .login-options {
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .login-register {
+        margin-top: 18px;
+    }
+}
+/* Fix Keep me signed in checkbox size */
+.remember {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.login-card .remember input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px;
+    min-height: 16px;
+    max-width: 16px;
+    max-height: 16px;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    appearance: auto;
+    -webkit-appearance: checkbox;
+    box-shadow: none;
+}
+
+@media screen and (max-width: 768px) {
+    .login-options {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .remember {
+        font-size: 13px;
+        gap: 6px;
+    }
+
+    .login-options a {
+        font-size: 13px;
+        white-space: nowrap;
+    }
+}
