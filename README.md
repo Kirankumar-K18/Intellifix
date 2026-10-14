@@ -1,4 +1,6 @@
-# IntelliFix : An AI-Driven Smart Public Issue Resolving System 
+<h1 align="center">
+  IntelliFix : An AI-Driven Smart Public Issue Resolving System 
+</h1>
 <p align="center">
   <img src="docs/screenshots/logo.png" alt="IntelliFix Logo" width="400">
 </p>
@@ -11,10 +13,13 @@
   <img src="https://img.shields.io/badge/Django-4.2-green" alt="Django">
   <img src="https://img.shields.io/badge/Python-3.11-blue" alt="Python">
   <img src="https://img.shields.io/badge/React-18-blue" alt="React">
+  <img src="https://img.shields.io/badge/Vite-Frontend-646CFF" alt="Vite">
   <img src="https://img.shields.io/badge/MySQL-8.0-blue" alt="MySQL">
-  <img src="https://img.shields.io/badge/AI%2FML-TF--IDF%20%7C%20Random%20Forest-orange" alt="AI ML">
+  <img src="https://img.shields.io/badge/AI%2FML-TF--IDF%20%7C%20Random%20Forest-orange" alt="AI/ML">
+  <img src="https://img.shields.io/badge/Deep%20Learning-MobileNetV2-red" alt="MobileNetV2">
+  <img src="https://img.shields.io/badge/TensorFlow-Keras-FF6F00" alt="TensorFlow">
   <img src="https://img.shields.io/badge/Auth-JWT-purple" alt="JWT">
-  <img src="https://img.shields.io/badge/Deployment-Docker-blue" alt="Docker">
+  <img src="https://img.shields.io/badge/Version-v1.0.1-brightgreen" alt="Version">
 </p>
 
 ---
